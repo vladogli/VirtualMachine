@@ -143,8 +143,7 @@ void CompileStr(std::ofstream &out, std::string str, std::vector<std::string> &e
 	size_t itr = 0;
 	StrReplace(str, ',', ' ');
 
-	std::string Word;
-	GetNextWord(str, itr);
+	std::string Word = GetNextWord(str, itr);
 	if (StrHas(Word, ':')) {
 		words.push_back(word(word::NOTHING, Word, offset, 1));
 		return;

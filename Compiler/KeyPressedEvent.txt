@@ -1,0 +1,27 @@
+	mov ax, iv
+	mov if, 1
+	
+	mov ax, iv
+	sub ax, 8
+	jz if_backspace
+	
+	sub ax, 10
+	jz if_ret
+	
+	jmp other_button
+if_ret:
+	endl
+	jmp exit
+if_backspace:
+	dec mx
+	mov ax, sf
+	sub ax, 1
+	jnz exit
+	
+	inc mx
+	jmp exit
+other_button:
+	swchr iv
+exit:
+	mov if, 0
+	ret

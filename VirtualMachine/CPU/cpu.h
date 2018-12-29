@@ -6,8 +6,8 @@
 #define ADDR unsigned short
 #define SIZE unsigned short
 #define BYTE unsigned char
-#define MATRIX_X_MAX_SIZE 160
-#define MATRIX_Y_MAX_SIZE 90
+#define MATRIX_X_MAX_SIZE 150
+#define MATRIX_Y_MAX_SIZE 60
 class CPU {
 public: // Variables 
 // Memory
@@ -48,7 +48,7 @@ private:
 
 
 	********************************************************************************
-	**            First 32 bytes in ram - pointers to interrupt events            **
+	**          First 32 bytes in RAM is a pointers to interrupt events           **
 	**  IR_VAL     NAME                     ADDR               VALUE              **
 	**  0x00       KEYBOARD_INPUT_EVENT     0x00               0x20               **
 	**  0x01       NONE                     0x02               0x                 **
@@ -226,10 +226,10 @@ private: // functions
 	// BYTE-CODE            NAME                     HOW TO USE
 
 	// 0x60                 MOV                      MOV #REG, $LLHH
-	void					op_peek();               // Read from address  to register
+	void					op_peek();               // Write value  to register
 
 	// 0x61                 MOV                      MOV $LLHH, #REG
-	void					op_poke();               // Read from register to address
+	void					op_poke();               // Write register value to addr 
 
 	// first  - dest   addr
 	// second - source addr
@@ -295,7 +295,7 @@ private: // functions
 	// 0x83                 SWINT                    SWINT #REG
 	void					op_int_show_reg();       // Read from register int and show it
 
-	// 0x84                 SWCHR                    SWCHR $LL
+	// 0x84                 SWCHR                    SWCHR $LLHH
 	void					op_char_show();          // Show char
 
 	// 0x85                 SWCHR                    SWCHR #REG

@@ -2,6 +2,8 @@
 
 #define READ(v)    ProcData->Read2Bytes(v)
 #define WRITE(x,v) ProcData->Write2Bytes(x, v)
+#define READ1(v) ProcData->Read(v)
+#define WRITE1(x,v) ProcData->Write(x, v)
 
 #define IP 0x00
 #define READ_IP     READ(IP)
@@ -12,16 +14,28 @@
 #define WRITE_SP(x) WRITE(SP,x)
 
 #define ZF 0x23
-#define READ_ZF     READ(ZF)
-#define WRITE_ZF(x) WRITE(ZF,x)
+#define READ_ZF     READ1(ZF)
+#define WRITE_ZF(x) WRITE1(ZF,x)
 
 #define SF 0x23
-#define READ_SF     READ(SF)
-#define WRITE_SF(x) WRITE(SF,x)
+#define READ_SF     READ1(SF)
+#define WRITE_SF(x) WRITE1(SF,x)
 
 #define OF 0x23
-#define READ_OF     READ(OF)
-#define WRITE_OF(x) WRITE(OF,x)
+#define READ_OF     READ1(OF)
+#define WRITE_OF(x) WRITE1(OF,x)
+
+#define IR 0x14
+#define READ_IR READ1(IR)
+#define WRITE_IR(x) WRITE1(IR, x)
+
+#define IV 0x15
+#define READ_IV READ(IV)
+#define WRITE_IV(x) WRITE(IV, x)
+
+#define IF 0x26
+#define READ_IF READ1(IF)
+#define WRITE_IF(x) WRITE1(IF, x)
 
 #define IsReg2Bytes(x) (IsReg(x) && !RegType(x))
 
@@ -33,11 +47,13 @@ CPU::CPU() {
 	memMatrix = new memory(0x3840); // 160 x 90 symbols
 	stack   = new memory(0xFFFF);
 	ProcData= new memory(0x40);
-	matrix = new BYTE*[90];
-	for (BYTE i = 0; i < 90; i++) {
-		matrix[i] = &memMatrix->mem[i * 160];
+	matrix = new BYTE*[MATRIX_Y_MAX_SIZE];
+	for (BYTE i = 0; i < MATRIX_Y_MAX_SIZE; i++) {
+		matrix[i] = &memMatrix->mem[i * MATRIX_X_MAX_SIZE];
 	}
+	WRITE_IR(0xFF);
 	WRITE_IP(0x30);
+	WRITE_SP(0);
 #define init_op(x,y) functions[x] = new std::function<void(void)>(std::bind(&CPU::y, this));
 	init_op(0, op_exit);
 	init_op(1, op_int_tostring);
@@ -168,10 +184,10 @@ void CPU::op_xor() {
 		return;
 	}
 	if (RegType(first)) {
-		WRITE_ZF(ReadFromReg(first) ^ ReadFromReg(second));
+		WriteToReg(first, ReadFromReg(first) ^ ReadFromReg(second));
 	}
 	else {
-		WRITE_ZF(ReadFromReg2(first) ^ ReadFromReg2(second));
+		WriteToReg2(first,ReadFromReg2(first) ^ ReadFromReg2(second));
 	}
 	WRITE_IP(SavedIP + 3);
 }
@@ -184,10 +200,10 @@ void CPU::op_or() {
 		return;
 	}
 	if (RegType(first)) {
-		WRITE_ZF(ReadFromReg(first) || ReadFromReg(second));
+		WriteToReg(first, ReadFromReg(first) || ReadFromReg(second));
 	}
 	else {
-		WRITE_ZF(ReadFromReg2(first) || ReadFromReg2(second));
+		WriteToReg2(first, ReadFromReg2(first) || ReadFromReg2(second));
 	}
 	WRITE_IP(SavedIP + 3);
 }
@@ -200,10 +216,10 @@ void CPU::op_and() {
 		return;
 	}
 	if (RegType(first)) {
-		WRITE_ZF(ReadFromReg(first) == ReadFromReg(second));
+		WriteToReg(first, ReadFromReg(first) == ReadFromReg(second));
 	}
 	else {
-		WRITE_ZF(ReadFromReg2(first) == ReadFromReg2(second));
+		WriteToReg2(first, ReadFromReg2(first) == ReadFromReg2(second));
 	}
 	WRITE_IP(SavedIP + 3);
 }
@@ -531,8 +547,8 @@ void CPU::op_reg_store() {
 /* 0x60 - 0x6F */
 void CPU::op_peek() {
 	unsigned short SavedIP = READ_IP;
-	unsigned short _Value = RAM->Read2Bytes(RAM->Read2Bytes(SavedIP + 1));
-	BYTE reg  = RAM->Read(SavedIP + 3);
+	BYTE reg = RAM->Read(SavedIP + 1);
+	unsigned short _Value = RAM->Read2Bytes(SavedIP + 2);
 	if (!IsReg(reg)) {
 		op_exit();
 		return;
@@ -547,8 +563,8 @@ void CPU::op_peek() {
 }
 void CPU::op_poke() {
 	unsigned short SavedIP = READ_IP;
-	BYTE reg = RAM->Read(SavedIP + 1);
-	ADDR addr= RAM->Read2Bytes(RAM->Read2Bytes(SavedIP + 2));
+	ADDR addr = RAM->Read2Bytes(RAM->Read2Bytes(SavedIP + 1));
+	BYTE reg = RAM->Read(SavedIP + 3);
 	if (!IsReg(reg)) {
 		op_exit();
 		return;
@@ -737,9 +753,8 @@ void CPU::op_int_show() {
 	BYTE Y = ReadFromReg(MY);
 	std::string _v = std::to_string(_Value);
 	if (X + _v.size() + 1 > MATRIX_X_MAX_SIZE) {
-		if (Y == MATRIX_Y_MAX_SIZE) {
+		if (Y + 1 == MATRIX_Y_MAX_SIZE) {
 			op_scroll();
-			Y--;
 		}
 		else {
 			Y++;
@@ -779,6 +794,9 @@ void CPU::op_int_show_reg() {
 		}
 		X = 0;
 	}
+	else {
+		X++;
+	}
 	memcpy(&matrix[Y][X], _v.c_str(), _v.size());
 	WriteToReg(MX, X + (unsigned char)_v.size() + 1);
 	WriteToReg(MY, Y);
@@ -793,11 +811,17 @@ void CPU::op_char_show_reg() {
 	}
 	BYTE X = ReadFromReg(MX);
 	BYTE Y = ReadFromReg(MY);
-	if (X > MATRIX_X_MAX_SIZE) {
+	if (X + 1 > MATRIX_X_MAX_SIZE) {
 		if (Y + 1 == MATRIX_Y_MAX_SIZE) {
 			op_scroll();
 		}
+		else {
+			Y++;
+		}
 		X = 0;
+	}
+	else {
+		X++;
 	}
 	matrix[Y][X] = ReadFromReg(reg);
 	WriteToReg(MX, X);
@@ -808,13 +832,19 @@ void CPU::op_char_show() {
 	unsigned short SavedIP = READ_IP;
 	BYTE X = ReadFromReg(MX);
 	BYTE Y = ReadFromReg(MY);
-	if (X > MATRIX_X_MAX_SIZE) {
+	if (X + 1> MATRIX_X_MAX_SIZE) {
 		if (Y + 1 == MATRIX_Y_MAX_SIZE) {
 			op_scroll();
 		}
+		else {
+			Y++;
+		}
 		X = 0;
 	}
-	matrix[Y][X] = RAM->Read(SavedIP + 1);
+	else {
+		X++;
+	}
+	matrix[Y][X] = (BYTE)RAM->Read2Bytes(SavedIP + 1);
 	WriteToReg(MX, X);
 	WriteToReg(MY, Y);
 	WRITE_IP(SavedIP + 2);
@@ -824,8 +854,8 @@ void CPU::op_scroll() {
 	if (ReadFromReg(MY) == 0) {
 		return;
 	}
-	for (BYTE i = 1; i < 90; i++) {
-		memcpy(matrix[i - 1], matrix[i], 160);
+	for (BYTE i = 1; i < MATRIX_Y_MAX_SIZE; i++) {
+		memcpy(matrix[i - 1], matrix[i], MATRIX_X_MAX_SIZE);
 	}
 	WriteToReg(MY, ReadFromReg(MY) - 1);
 }
@@ -866,39 +896,26 @@ BYTE CPU::GetRegAddr(BYTE reg) {
 		return reg + 0x10;
 	}
 	else {
-		if ((reg & 0x20) == 0x20) {
-			return 2 + (reg ^ 0x20);
+		if ((reg & 0x30) == 0x30) {
+			return 0x12 + (reg ^ 0x30);
 		}
 		else {
-			return 0x12 + (reg ^ 0x30);
+			return 0x12 + (reg ^ 0x20);
 		}
 	}
 }
 bool CPU::RegType(BYTE reg) {
-	return (reg & 0x20) == 0x20 || IsFlag(reg) || (reg & 0x30) == 0x30;
+	return (reg & 0x20) == 0x20 || IsFlag(reg);
 }
 bool CPU::IsReg(BYTE reg) {
 	return reg < 9 ||                // Registers
-		(reg >= 20 && reg <= 28) ||  // Low-Registers
-		(reg >= 10 && reg <= 18) ||  // Flags
-		(reg >= 30 && reg <= 33);    // Matrix & interrupt Registers
+		(reg >= 0x20 && reg <= 0x28) ||  // Low-Registers
+		(reg >= 0x10 && reg <= 0x18) ||  // Flags
+		(reg >= 0x30 && reg <= 0x33);    // Matrix & interrupt Registers
 }
 bool CPU::IsFlag(BYTE reg) {
 	return reg >= 10 && reg <= 18;
 }
-
-#define IR 0x14
-#define READ_IR READ(IR)
-#define WRITE_IR(x) WRITE(IR, x)
-
-#define IV 0x15
-#define READ_IV READ(IV)
-#define WRITE_IV(x) WRITE(IV, x)
-
-#define IF 0x26
-#define READ_IF READ(IF)
-#define WRITE_IF(x) WRITE(IF, x)
-
 void CPU::NextOp() {
 	if (READ_IR != 0xFF) {
 		if (!READ_IF) {
@@ -906,6 +923,7 @@ void CPU::NextOp() {
 			WRITE_IP(RAM->Read2Bytes(READ_IR * 2)); 
 			WRITE_IR(0xFF);
 		}
+		closed = 0;
 	}
 	if (clock() < unsleep_clock) {
 		return;

@@ -28,17 +28,17 @@ int main(void)
 	VM.OpenThread();
 	boost::thread thread(function, std::ref(VM));
 	auto matr = VM.GetMatrix();
-	unsigned char** saved = new (unsigned char*[51]);
-	for (size_t j = 0; j < 51; j++) {
-		saved[j] = new unsigned char[80];
-		for (int i = 0; i < 80; i++) {
+	unsigned char** saved = new (unsigned char*[60]);
+	for (size_t j = 0; j < 60; j++) {
+		saved[j] = new unsigned char[150];
+		for (int i = 0; i < 150; i++) {
 			saved[j][i] = 0;
 		}
 	}
 	while (1) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(25));
-		for (short i = 0; i < 80; i++) {
-			for (short j = 0; j < 50; j++) {
+		for (short i = 0; i < 150; i++) {
+			for (short j = 0; j < 60; j++) {
 				if (matr[j][i] != saved[j][i])
 				{
 					saved[j][i] = matr[j][i];

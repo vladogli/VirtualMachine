@@ -80,7 +80,7 @@ void memory::Write2Bytes(ADDR addr, unsigned short _Value) {
 	}
 #endif
 	mem[addr] = _Value % 256;
-	mem[addr+1] = _Value / 256;
+	mem[addr + 1] = (unsigned char)(_Value / 256);
 }
 void memory::Write(ADDR dest, BYTE*& source, SIZE size) {
 #ifndef memory_NOEXCEPT

@@ -2,6 +2,7 @@
 #include "../memory/memory.h"
 #include <string>
 #include <functional>
+#include <ctime>
 #define ADDR unsigned short
 #define SIZE unsigned short
 #define BYTE unsigned char
@@ -42,8 +43,35 @@ private:
 
 	Matrix Registers
 	ASM(name)  Addr           Desc                   BYTE-CODE 
-	MX         0x10           Matrix      X Pointer  0x30
-	MY         0x11           Matrix      Y Pointer  0x31
+	MX         0x12           Matrix      X Pointer  0x30
+	MY         0x13           Matrix      Y Pointer  0x31
+
+
+	********************************************************************************
+	**            First 32 bytes in ram - pointers to interrupt events            **
+	**  IR_VAL     NAME                     ADDR               VALUE              **
+	**  0x00       KEYBOARD_INPUT_EVENT     0x00               0x20               **
+	**  0x01       NONE                     0x02               0x                 **
+	**  0x02       NONE                     0x04               0x                 **
+	**  0x03       NONE                     0x06               0x                 **
+	**  0x04       NONE                     0x08               0x                 **
+	**  0x05       NONE                     0x0A               0x                 **
+	**  0x06       NONE                     0x0C               0x                 **
+	**  0x07       NONE                     0x0E               0x                 **
+	**  0x08       NONE                     0x10               0x                 **
+	**  0x09       NONE                     0x12               0x                 **
+	**  0x0A       NONE                     0x14               0x                 **
+	**  0x0B       NONE                     0x16               0x                 **
+	**  0x0C       NONE                     0x18               0x                 **
+	**  0x0D       NONE                     0x1A               0x                 **
+	**  0x0E       NONE                     0x1C               0x                 **
+	**  0x0F       NONE                     0x1E               0x                 **
+	********************************************************************************
+
+	Interrupt register
+	ASM(name)  Addr           Desc                   BYTE-CODE 
+	IR         0x14           Interrupt Register     0x32
+	IV         0x15-0x16      Interrupt value        0x33
 
 	FLAGS
 	ASM(name)  Addr           Desc                   BYTE-CODE 
@@ -58,7 +86,7 @@ private:
 	OF         0x28           Overflow  Flag         0x18
 	*/
 	memory *ProcData;
-	
+	int unsleep_clock = 0;
 // Opcodes
 	std::function<void(void)>** functions;
 private: // functions
@@ -69,8 +97,17 @@ private: // functions
 	// 0x00                 EXT                     EXT
 	void					op_exit();              // exit
 
-	// 0x01                 ITOS                    ITOS #$REG
+	// 0x01                 ITOS                    ITOS #REG
 	void					op_int_tostring();      // itos
+
+
+
+	// 0x02                 SLP                     ITOS $LLHH
+	void                    op_sleep();
+
+	// 0x03                 SLP                     ITOS #REG
+	void                    op_sleep_reg();
+
 
 
 
@@ -264,12 +301,34 @@ private: // functions
 	// 0x85                 SWCHR                    SWCHR #REG
 	void					op_char_show_reg();      // Read from register char and show it
 
+	/*
+	********------              **      **********----
+	**********----               **     ************--
+	************--          ********    **************
+	**************               **     **************
+	**************              **      --------------
+	*/
 	// 0x86                 SCR                      SCR
 	void                    op_scroll();             // Scrolls the screen 
 
+	/*
+	--------------              **      ********------
+	********------               **     **********----
+	**********----          ********    ************--
+	************--               **     **************
+	**************              **      --------------
+	--------------                      --------------
+	*/
 	// 0x87                 ENDL                     ENDL
 	void                    op_nextline();           // NEXT_LINE_OPERAND
 
+	/*
+	--------------              **      --------------
+	********------               **     --------------
+	**********----          ********    --------------
+	************--               **     --------------
+	**************              **      --------------
+	*/
 	// 0x88                 CLS                      CLS
 	void                    op_page();               // Clears the screen
 
@@ -306,6 +365,7 @@ private: // functions
 	// 0 - false
 	bool					IsFlag								(BYTE);
 public: 
+	void keyPressed(BYTE key);
 	void NextOp();
 	std::function<void(void)> IoConnectToNewDevice;
 public: // structors
@@ -315,3 +375,5 @@ public: // structors
 #undef ADDR
 #undef SIZE
 #undef BYTE
+#undef MATRIX_X_MAX_SIZE
+#undef MATRIX_Y_MAX_SIZE

@@ -31,8 +31,8 @@ void VirtualMachine::Update() {
 }
 void VirtualMachine::OpenThread() {
 	if (closed) {
-		thread = new boost::thread(std::bind(&VirtualMachine::PrivateThread, this));
 		closed = 0;
+		thread = new boost::thread(std::bind(&VirtualMachine::PrivateThread, this));
 	}
 }
 void VirtualMachine::CloseThread() {
@@ -124,4 +124,7 @@ bool VirtualMachine::LoadLive() {
 }
 unsigned char**& VirtualMachine::GetMatrix() {
 	return core->matrix;
+}
+void VirtualMachine::ReceiveKey(unsigned char byte) {
+	core->keyPressed(byte);
 }

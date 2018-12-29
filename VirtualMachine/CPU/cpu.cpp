@@ -37,9 +37,12 @@ CPU::CPU() {
 	for (BYTE i = 0; i < 90; i++) {
 		matrix[i] = &memMatrix->mem[i * 160];
 	}
+	WRITE_IP(0x30);
 #define init_op(x,y) functions[x] = new std::function<void(void)>(std::bind(&CPU::y, this));
 	init_op(0, op_exit);
 	init_op(1, op_int_tostring);
+	init_op(2, op_sleep);
+	init_op(3, op_sleep_reg);
 	init_op(0x10, op_jump_to);
 	init_op(0x11, op_jump_z);
 	init_op(0x12, op_jump_nz);
@@ -112,6 +115,25 @@ void CPU::op_exit() {
 }
 void CPU::op_int_tostring() {
 
+}
+void CPU::op_sleep() {
+	unsigned short SavedIP = READ_IP;
+	unsleep_clock = clock() + RAM->Read2Bytes(SavedIP + 1);
+	WRITE_IP(SavedIP + 1);
+}
+void CPU::op_sleep_reg() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg = RAM->Read(SavedIP + 1);
+	if (!IsReg(reg)) {
+		return;
+	}
+	if (RegType(reg)) {
+		unsleep_clock = clock() + ReadFromReg(reg);
+	}
+	else {
+		unsleep_clock = clock() + ReadFromReg2(reg);
+	}
+	WRITE_IP(SavedIP + 1);
 }
 /* 0x10 - 0x1F */
 void CPU::op_jump_to() {
@@ -848,7 +870,7 @@ BYTE CPU::GetRegAddr(BYTE reg) {
 			return 2 + (reg ^ 0x20);
 		}
 		else {
-			return 0x10 + (reg ^ 0x30);
+			return 0x12 + (reg ^ 0x30);
 		}
 	}
 }
@@ -859,14 +881,35 @@ bool CPU::IsReg(BYTE reg) {
 	return reg < 9 ||                // Registers
 		(reg >= 20 && reg <= 28) ||  // Low-Registers
 		(reg >= 10 && reg <= 18) ||  // Flags
-		(reg >= 30 && reg <= 31);    // Matrix Registers
+		(reg >= 30 && reg <= 33);    // Matrix & interrupt Registers
 }
 bool CPU::IsFlag(BYTE reg) {
 	return reg >= 10 && reg <= 18;
 }
 
+#define IR 0x14
+#define READ_IR READ(IR)
+#define WRITE_IR(x) WRITE(IR, x)
+
+#define IV 0x15
+#define READ_IV READ(IV)
+#define WRITE_IV(x) WRITE(IV, x)
+
+#define IF 0x26
+#define READ_IF READ(IF)
+#define WRITE_IF(x) WRITE(IF, x)
 
 void CPU::NextOp() {
+	if (READ_IR != 0xFF) {
+		if (!READ_IF) {
+			PushStack(READ_IP);
+			WRITE_IP(RAM->Read2Bytes(READ_IR * 2)); 
+			WRITE_IR(0xFF);
+		}
+	}
+	if (clock() < unsleep_clock) {
+		return;
+	}
 	if (closed) { 
 		return; 
 	}
@@ -877,27 +920,37 @@ void CPU::NextOp() {
 	}
 	(*functions[op])();
 }
-#undef READ
-#undef WRITE
-
+void CPU::keyPressed(BYTE key) {
+	WRITE_IV(key);
+	WRITE_IR(0);
+}
 #undef IP
-#undef READ_IP     
-#undef WRITE_IP
-
 #undef SP
-#undef READ_SP
-#undef WRITE_SP
-
 #undef ZF 
-#undef READ_ZF     
-#undef WRITE_ZF
-
 #undef SF 
-#undef READ_SF     
-#undef WRITE_SF
-
 #undef OF 
-#undef READ_OF     
-#undef WRITE_OF
+#undef IR
+#undef IV
+#undef IF
+
+#undef READ
+#undef READ_IP  
+#undef READ_SP
+#undef READ_ZF   
+#undef READ_SF     
+#undef READ_OF  
+#undef READ_IR
+#undef READ_IV
+#undef READ_IF
+
+#undef WRITE
+#undef WRITE_IR
+#undef WRITE_IV
+#undef WRITE_IF
+#undef WRITE_SF   
+#undef WRITE_OF  
+#undef WRITE_ZF
+#undef WRITE_SP 
+#undef WRITE_IP
 
 #undef IsReg2Bytes

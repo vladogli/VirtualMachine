@@ -6,7 +6,7 @@
 class VirtualMachine {
 private: // Variables
 	CPU *core;
-	bool closed = 0;
+	bool closed = 1;
 	memory *RAM;
 	memory *outPort;
 	boost::thread *thread;
@@ -32,6 +32,7 @@ public:
 	bool LoadLive();
 
 	unsigned char**& GetMatrix();
+	void ReceiveKey(unsigned char byte);
 public:  // structors
 	VirtualMachine(unsigned long long unique_id, std::function<void(void)>, bool = 0);
 };

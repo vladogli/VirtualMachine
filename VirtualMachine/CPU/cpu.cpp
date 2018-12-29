@@ -44,7 +44,7 @@ CPU::CPU() {
 	for (unsigned short i = 0; i < 0x100; i++) {
 		functions[i] = nullptr;
 	}
-	memMatrix = new memory(0x3840); // 160 x 90 symbols
+	memMatrix = new memory(MATRIX_Y_MAX_SIZE * MATRIX_X_MAX_SIZE); // 160 x 90 symbols
 	stack   = new memory(0xFFFF);
 	ProcData= new memory(0x40);
 	matrix = new BYTE*[MATRIX_Y_MAX_SIZE];

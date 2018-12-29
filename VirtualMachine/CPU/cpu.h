@@ -11,7 +11,7 @@
 class CPU {
 public: // Variables 
 // Memory
-	//160 x 90 symbols
+	//150 x 60 symbols
 	memory *memMatrix;
 	memory *stack;
 	BYTE **matrix;
@@ -68,7 +68,7 @@ private:
 	**  0x0F       NONE                     0x1E               0x                 **
 	********************************************************************************
 
-	Interrupt register
+	Interrupt registers
 	ASM(name)  Addr           Desc                   BYTE-CODE 
 	IR         0x14           Interrupt Register     0x32
 	IV         0x15-0x16      Interrupt value        0x33

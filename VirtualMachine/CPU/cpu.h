@@ -12,17 +12,18 @@ public: // Variables
 // Memory
 	//160 x 90 symbols
 	memory *memMatrix;
+	memory *stack;
 	BYTE **matrix;
 	memory *RAM;
 	memory *inputPort;
 	memory *outPort;
+	bool closed = 0;
 private: 
 // Stack
 	enum Exceptions {
 		STACK_UNDERFLOW,
 		STACK_OVERFLOW
 	};
-	memory *stack;
 	void PushStack(unsigned short);
 	unsigned short PopStack();
 	/*
@@ -274,6 +275,7 @@ private: // functions
 
 
 // Register interaction funcs
+
 	// Write 2 bytes to register 
 	void					WriteToReg2							(BYTE, unsigned short);
 	
@@ -302,10 +304,10 @@ private: // functions
 	// is flag
 	// 1 - true
 	// 0 - false
-	bool					isFlag								(BYTE);
+	bool					IsFlag								(BYTE);
 public: 
-	bool closed = 0;
 	void NextOp();
+	std::function<void(void)> IoConnectToNewDevice;
 public: // structors
 	CPU();
 };

@@ -25,7 +25,7 @@ void memory::Copy(ADDR addr1, ADDR addr2, SIZE size) {
 #endif
 	memcpy(&mem[addr1], &mem[addr2], size);
 }
-bool memory::Compare(ADDR addr1, ADDR addr2, SIZE size) {
+bool memory::Compare(ADDR addr1, ADDR addr2, SIZE size)const {
 #ifndef MEMORY_NOEXCEPT
 	if (addr1 + size > memSize || addr2 + size > memSize) {
 		throw WRONG_ADDR;
@@ -41,7 +41,7 @@ void memory::Move(ADDR source, ADDR dest, SIZE size) {
 #endif
 	memmove(&mem[dest], &mem[source], size);
 }
-BYTE memory::Read(ADDR addr) {
+BYTE memory::Read(ADDR addr) const {
 #ifndef MEMORY_NOEXCEPT
 	if (addr > memSize) {
 		throw WRONG_ADDR;
@@ -49,7 +49,7 @@ BYTE memory::Read(ADDR addr) {
 #endif
 	return mem[addr];
 }
-unsigned short memory::Read2Bytes(ADDR addr) {
+unsigned short memory::Read2Bytes(ADDR addr) const {
 #ifndef MEMORY_NOEXCEPT
 	if (addr+1 > memSize) {
 		throw WRONG_ADDR;
@@ -57,7 +57,7 @@ unsigned short memory::Read2Bytes(ADDR addr) {
 #endif
 	return mem[addr] + mem[addr + 1] * 256;
 }
-void memory::Read(ADDR addr, BYTE*& dest, SIZE size) {
+void memory::Read(ADDR addr, BYTE*& dest, SIZE size) const {
 #ifndef MEMORY_NOEXCEPT
 	if (addr + size > memSize) {
 		throw WRONG_ADDR;
@@ -83,6 +83,15 @@ void memory::Write2Bytes(ADDR addr, unsigned short _Value) {
 	mem[addr + 1] = (unsigned char)(_Value / 256);
 }
 void memory::Write(ADDR dest, BYTE*& source, SIZE size) {
+#ifndef MEMORY_NOEXCEPT
+	if (dest + size > memSize) {
+		throw WRONG_ADDR;
+	}
+#endif
+	memcpy(&mem[dest], source, size);
+}
+void memory::Write(ADDR dest, const BYTE*& source, SIZE size) {
+
 #ifndef MEMORY_NOEXCEPT
 	if (dest + size > memSize) {
 		throw WRONG_ADDR;

@@ -23,19 +23,19 @@ public: // Functions
 	void Copy(ADDR, ADDR, SIZE);
 
 	// Compares 2 blocks of memory
-	bool Compare(ADDR, ADDR, SIZE);
+	bool Compare(ADDR, ADDR, SIZE) const;
 
 	// Moves from ADDR to ADDR SIZE bytes
 	void Move(ADDR, ADDR, SIZE);
 
 	// Read 1 byte on addr
-	BYTE Read(ADDR);
+	BYTE Read(ADDR) const;
 
 	// Read 2 bytes on addr
-	unsigned short Read2Bytes(ADDR);
+	unsigned short Read2Bytes(ADDR) const;
 
 	// Read SIZE bytes to dest
-	void Read(ADDR, BYTE*&, SIZE);
+	void Read(ADDR, BYTE*&, SIZE) const;
 
 	// Write 1 byte on addr
 	void Write(ADDR, BYTE);
@@ -45,6 +45,7 @@ public: // Functions
 
 	// Write SIZE bytes to dest
 	void Write(ADDR, BYTE*&, SIZE);
+	void Write(ADDR, const BYTE*&, SIZE);
 
 
 public: // Structors

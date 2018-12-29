@@ -31,8 +31,6 @@ CPU::CPU() {
 		functions[i] = nullptr;
 	}
 	memMatrix = new memory(0x3840); // 160 x 90 symbols
-	RAM     = new memory(0xFFFF);
-	outPort = new memory(0xFFFF);
 	stack   = new memory(0xFFFF);
 	ProcData= new memory(0x40);
 	matrix = new BYTE*[90];
@@ -191,7 +189,7 @@ void CPU::op_add() {
 	unsigned short SavedIP = READ_IP;
 	BYTE first = RAM->Read(SavedIP + 1);
 	BYTE second = RAM->Read(SavedIP + 2);
-	if (!IsReg(first) || !IsReg(second) || isFlag(first) || isFlag(second)) {
+	if (!IsReg(first) || !IsReg(second) || IsFlag(first) || IsFlag(second)) {
 		op_exit();
 		return;
 	}
@@ -212,7 +210,7 @@ void CPU::op_sub() {
 	unsigned short SavedIP = READ_IP;
 	BYTE first = RAM->Read(SavedIP + 1);
 	BYTE second = RAM->Read(SavedIP + 2);
-	if (!IsReg(first) || !IsReg(second) || isFlag(first) || isFlag(second)) {
+	if (!IsReg(first) || !IsReg(second) || IsFlag(first) || IsFlag(second)) {
 		op_exit();
 		return;
 	}
@@ -236,7 +234,7 @@ void CPU::op_mul() {
 	unsigned short SavedIP = READ_IP;
 	BYTE first = RAM->Read(SavedIP + 1);
 	BYTE second = RAM->Read(SavedIP + 2);
-	if (!IsReg(first) || !IsReg(second) || isFlag(first) || isFlag(second)) {
+	if (!IsReg(first) || !IsReg(second) || IsFlag(first) || IsFlag(second)) {
 		op_exit();
 		return;
 	}
@@ -254,7 +252,7 @@ void CPU::op_div() {
 	unsigned short SavedIP = READ_IP;
 	BYTE first  = RAM->Read(SavedIP + 1);
 	BYTE second = RAM->Read(SavedIP + 2);
-	if (!IsReg(first) || !IsReg(second) || isFlag(first) || isFlag(second)) {
+	if (!IsReg(first) || !IsReg(second) || IsFlag(first) || IsFlag(second)) {
 		op_exit();
 		return;
 	}
@@ -842,7 +840,7 @@ BYTE CPU::GetRegAddr(BYTE reg) {
 	if (!RegType(reg)) {
 		return reg * 2;
 	}
-	else if (isFlag(reg)){
+	else if (IsFlag(reg)){
 		return reg + 0x10;
 	}
 	else {
@@ -855,7 +853,7 @@ BYTE CPU::GetRegAddr(BYTE reg) {
 	}
 }
 bool CPU::RegType(BYTE reg) {
-	return (reg & 0x20) == 0x20 || isFlag(reg) || (reg & 0x30) == 0x30;
+	return (reg & 0x20) == 0x20 || IsFlag(reg) || (reg & 0x30) == 0x30;
 }
 bool CPU::IsReg(BYTE reg) {
 	return reg < 9 ||                // Registers
@@ -863,7 +861,7 @@ bool CPU::IsReg(BYTE reg) {
 		(reg >= 10 && reg <= 18) ||  // Flags
 		(reg >= 30 && reg <= 31);    // Matrix Registers
 }
-bool CPU::isFlag(BYTE reg) {
+bool CPU::IsFlag(BYTE reg) {
 	return reg >= 10 && reg <= 18;
 }
 

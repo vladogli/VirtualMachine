@@ -146,7 +146,14 @@ private: // functions
 	// 0x32                 SLN                      SLN #REG, #REG
 	void					op_string_size();        // put in register str size
 
+
+
+
+
 	/* 0x40 - 0x4F */
+
+	// BYTE-CODE            NAME                     HOW TO USE
+
 	// 0x40                 CMP                      CMP #REG, #REG
 	void					op_cmp_reg();            // Compare 2 registers
 
@@ -156,7 +163,13 @@ private: // functions
 	// 0x42                 CMPS                     CMPS #REG, #REG
 	void					op_cmp_string();         // Compare 2 strings which are saved in registers
 
+
+
+
+
 	/* 0x50 - 0x5F */
+
+	// BYTE-CODE            NAME                     HOW TO USE
 
 	// 0x50                 NOP
 	void					op_nop();                // No operation
@@ -238,17 +251,17 @@ private: // functions
 	// 0x81                 SWSTR                    SWSTR #REG
 	void					op_string_show_reg();    // Read from register pointer to str and show it
 
-	// 0x82                 SWINT                    SWINT #REG
-	void					op_int_show_reg();       // Read from register int and show it
-
-	// 0x83                 SWINT                    SWINT $LLHH
+	// 0x82                 SWINT                    SWINT $LLHH
 	void					op_int_show();           // Show int
 
-	// 0x84                 SWCHR                    SWCHR #REG
-	void					op_char_show_reg();      // Read from register char and show it
+	// 0x83                 SWINT                    SWINT #REG
+	void					op_int_show_reg();       // Read from register int and show it
 
-	// 0x85                 SWCHR                    SWCHR $LL
+	// 0x84                 SWCHR                    SWCHR $LL
 	void					op_char_show();          // Show char
+
+	// 0x85                 SWCHR                    SWCHR #REG
+	void					op_char_show_reg();      // Read from register char and show it
 
 	// 0x86                 SCR                      SCR
 	void                    op_scroll();             // Scrolls the screen 

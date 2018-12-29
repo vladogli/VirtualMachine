@@ -6,6 +6,7 @@
 #define IP 0x00
 #define READ_IP     READ(IP)
 #define WRITE_IP(x) WRITE(IP, x)
+
 #define SP 0x10
 #define READ_SP     READ(SP)
 #define WRITE_SP(x) WRITE(SP,x)
@@ -38,6 +39,57 @@ CPU::CPU() {
 	for (BYTE i = 0; i < 90; i++) {
 		matrix[i] = &memMatrix->mem[i * 160];
 	}
+#define init_op(x,y) functions[x] = new std::function<void(void)>(std::bind(&CPU::y, this));
+	init_op(0, op_exit);
+	init_op(1, op_int_tostring);
+	init_op(0x10, op_jump_to);
+	init_op(0x11, op_jump_z);
+	init_op(0x12, op_jump_nz);
+
+	init_op(0x20, op_xor);
+	init_op(0x21, op_or);
+	init_op(0x22, op_and);
+	init_op(0x23, op_add);
+	init_op(0x24, op_sub);
+	init_op(0x25, op_mul);
+	init_op(0x26, op_div);
+	init_op(0x27, op_inc);
+	init_op(0x28, op_dec);
+
+	init_op(0x30, op_string_concat);
+	init_op(0x31, op_string_toint);
+	init_op(0x32, op_string_size);
+
+	init_op(0x40, op_cmp_reg);
+	init_op(0x41, op_cmp_immediate);
+	init_op(0x42, op_cmp_string);
+
+	init_op(0x50, op_nop);
+	init_op(0x51, op_reg_store);
+
+	init_op(0x60, op_peek);
+	init_op(0x61, op_poke);
+	init_op(0x62, op_memcpy);
+	init_op(0x63, op_memcpy_reg);
+	init_op(0x64, op_memcpy_stack);
+
+	init_op(0x70, op_stack_push);
+	init_op(0x71, op_stack_push_reg);
+	init_op(0x72, op_stack_pop_reg);
+	init_op(0x73, op_stack_ret);
+	init_op(0x74, op_stack_call);
+
+	init_op(0x80, op_string_show);
+	init_op(0x81, op_string_show_reg);
+	init_op(0x82, op_int_show);
+	init_op(0x83, op_int_show_reg);
+	init_op(0x84, op_char_show);
+	init_op(0x85, op_char_show_reg);
+	init_op(0x86, op_scroll);
+	init_op(0x87, op_nextline);
+	init_op(0x88, op_page);
+	 
+#undef init_op
 }
 
 void CPU::PushStack(unsigned short _Val) {
@@ -815,6 +867,18 @@ bool CPU::isFlag(BYTE reg) {
 	return reg >= 10 && reg <= 18;
 }
 
+
+void CPU::NextOp() {
+	if (closed) { 
+		return; 
+	}
+	BYTE op = RAM->Read(READ_IP);
+	if (functions[op] == nullptr) {
+		op_nop();
+		return;
+	}
+	(*functions[op])();
+}
 #undef READ
 #undef WRITE
 
@@ -839,7 +903,3 @@ bool CPU::isFlag(BYTE reg) {
 #undef WRITE_OF
 
 #undef IsReg2Bytes
-
-void CPU::NextOp() {
-
-}

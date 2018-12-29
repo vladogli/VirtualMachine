@@ -10,15 +10,15 @@ memory::~memory() {
 	delete[] mem;
 }
 void memory::Fill(ADDR addr, SIZE size, BYTE byte) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (addr + size > memSize) {
 		throw WRONG_ADDR;
 	}
 #endif
-	memset(mem, byte, size);
+	memset(mem + addr, byte, size);
 }
 void memory::Copy(ADDR addr1, ADDR addr2, SIZE size) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (addr1 + size > memSize || addr2 + size > memSize) {
 		throw WRONG_ADDR;
 	}
@@ -26,7 +26,7 @@ void memory::Copy(ADDR addr1, ADDR addr2, SIZE size) {
 	memcpy(&mem[addr1], &mem[addr2], size);
 }
 bool memory::Compare(ADDR addr1, ADDR addr2, SIZE size) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (addr1 + size > memSize || addr2 + size > memSize) {
 		throw WRONG_ADDR;
 	}
@@ -34,7 +34,7 @@ bool memory::Compare(ADDR addr1, ADDR addr2, SIZE size) {
 	return (memcmp(&mem[addr1], &mem[addr2], size) == 0);
 }
 void memory::Move(ADDR source, ADDR dest, SIZE size) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (source + size > memSize || dest + size > memSize) {
 		throw WRONG_ADDR;
 	}
@@ -42,7 +42,7 @@ void memory::Move(ADDR source, ADDR dest, SIZE size) {
 	memmove(&mem[dest], &mem[source], size);
 }
 BYTE memory::Read(ADDR addr) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (addr > memSize) {
 		throw WRONG_ADDR;
 	}
@@ -50,7 +50,7 @@ BYTE memory::Read(ADDR addr) {
 	return mem[addr];
 }
 unsigned short memory::Read2Bytes(ADDR addr) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (addr+1 > memSize) {
 		throw WRONG_ADDR;
 	}
@@ -58,7 +58,7 @@ unsigned short memory::Read2Bytes(ADDR addr) {
 	return mem[addr] + mem[addr + 1] * 256;
 }
 void memory::Read(ADDR addr, BYTE*& dest, SIZE size) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (addr + size > memSize) {
 		throw WRONG_ADDR;
 	}
@@ -66,7 +66,7 @@ void memory::Read(ADDR addr, BYTE*& dest, SIZE size) {
 	memcpy(dest, &mem[addr], size);
 }
 void memory::Write(ADDR addr, BYTE byte) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (addr > memSize) {
 		throw WRONG_ADDR;
 	}
@@ -74,7 +74,7 @@ void memory::Write(ADDR addr, BYTE byte) {
 	mem[addr] = byte;
 }
 void memory::Write2Bytes(ADDR addr, unsigned short _Value) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (addr+1 > memSize) {
 		throw WRONG_ADDR;
 	}
@@ -83,7 +83,7 @@ void memory::Write2Bytes(ADDR addr, unsigned short _Value) {
 	mem[addr + 1] = (unsigned char)(_Value / 256);
 }
 void memory::Write(ADDR dest, BYTE*& source, SIZE size) {
-#ifndef memory_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	if (dest + size > memSize) {
 		throw WRONG_ADDR;
 	}

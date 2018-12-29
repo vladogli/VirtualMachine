@@ -4,10 +4,10 @@
 #define ADDR unsigned int
 #define SIZE unsigned short
 #define BYTE unsigned char
-//#define RAM_NOEXCEPT
+#define MEMORY_NOEXCEPT
 class memory {
 public: // structs
-#ifndef RAM_NOEXCEPT
+#ifndef MEMORY_NOEXCEPT
 	enum Exceptions {
 		WRONG_ADDR
 	};

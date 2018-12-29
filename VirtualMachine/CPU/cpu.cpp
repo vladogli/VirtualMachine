@@ -1,10 +1,18 @@
 #include "cpu.h"
+#define READ(v)    ProcData->Read2Bytes(v)
+#define WRITE(x,v) ProcData->Write2Bytes(x, v)
+
 #define IP 0x00
-#define READ_IP ProcData->Read2Bytes(IP)
-#define WRITE_IP(x) ProcData->Write2Bytes(IP, x)
+#define READ_IP     READ(IP)
+#define WRITE_IP(x) WRITE(IP, x)
 #define SP 0x10
-#define READ_SP     ProcData->Read2Bytes(SP)
-#define WRITE_SP(x) ProcData->Write2Bytes(SP,x)
+#define READ_SP     READ(SP)
+#define WRITE_SP(x) WRITE(SP,x)
+
+#define ZF 0x23
+#define READ_ZF     READ(ZF)
+#define WRITE_ZF(x) WRITE(ZF,x)
+
 CPU::CPU() {
 	functions = new std::function<void(void)>*[0x100];
 	for (unsigned short i = 0; i < 0x100; i++) {
@@ -58,18 +66,191 @@ void CPU::op_inc() {}
 void CPU::op_dec() {}
 
 /* 0x30 - 0x3F */
-void CPU::op_string_store() {}
-void CPU::op_string_print() {}
-void CPU::op_string_concat() {}
-void CPU::op_string_system() {}
-void CPU::op_string_toint() {}
+void CPU::op_string_concat() {
+	unsigned short SavedIP = READ_IP;
+	BYTE dest   = RAM->Read(SavedIP + 1);
+	BYTE first  = RAM->Read(SavedIP + 2);
+	BYTE second = RAM->Read(SavedIP + 3);
+#define isReg2Bytes(x) (IsReg(x) && !RegType(x))
+	if (isReg2Bytes(dest) && isReg2Bytes(first) && isReg2Bytes(second)) {
+#undef isReg2Bytes
+		ADDR destAddr = ReadFromReg2(dest);
+		ADDR sourceFirst = ReadFromReg2(first);
+		ADDR sourceSecond = ReadFromReg2(second);
+		BYTE itr = 0, itr2 = 0;
+		while (itr < 128) {
+			BYTE ReadedValue = RAM->Read(sourceFirst + itr);
+			if (ReadedValue == 0) {
+				break;
+			}
+			RAM->Write(destAddr + itr, ReadedValue);
+			itr++;
+		}
+		while (itr2 < 128) {
+			BYTE ReadedValue = RAM->Read(sourceSecond + itr2);
+			if (ReadedValue == 0) {
+				break;
+			}
+			RAM->Write(destAddr + itr, ReadedValue);
+			itr++;
+			itr2++;
+		}
+	}
+	else {
+		op_exit();
+		return;
+	}
+	WRITE_IP(SavedIP + 4);
+}
+void CPU::op_string_toint() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg    = RAM->Read(SavedIP + 1);
+	BYTE strPtr = RAM->Read(SavedIP + 2);
+	if (!IsReg(reg) || !IsReg(strPtr) || RegType(strPtr)) {
+		op_exit();
+		return;
+	}
+	ADDR str = ReadFromReg2(strPtr);
+	unsigned short WriteValue = 0;
+	int itr = 0;
+	std::string _Value;
+	while (_Value[itr] != 0) {
+		if (itr >= 7) {
+			op_exit();
+			return;
+		}
+		_Value += RAM->Read(str + itr);
+		itr++;
+	}
+	if (_Value.size() > 2 && _Value[0] == '0' && _Value[1] == 'x') {
+		itr = 0;
+		for (size_t x = _Value.size(); x > 1; x--,itr++) {
+			if (_Value[x] >= '0' && _Value[x] <= '9') {
+				WriteValue += (_Value[x] - '0') * (unsigned short)std::pow(0x10, itr);
+			}
+			else if(_Value[x] >= 'a' && _Value[x] >= 'f') {
+				WriteValue += (_Value[x] = 'a') * (unsigned short)std::pow(0x10, itr);
+			}
+			else {
+				break;
+			}
+		}
+	}
+	else {
+		itr = 0;
+		for (size_t x = _Value.size(); x > 1; x--, itr++) {
+			if (_Value[x] >= '0' && _Value[x] <= '9') {
+				WriteValue += (_Value[x] - '0') * (unsigned short)std::pow(10, itr);
+			}
+			else {
+				break;
+			}
+		}
+	}
+	if (RegType(reg)) {// 1 byte
+		WriteToReg(reg, (BYTE)WriteValue);
+	}
+	else {               // 2 bytes
+		WriteToReg2(reg, WriteValue);
+	}
+	WRITE_IP(SavedIP + 3);
+}
+void CPU::op_string_size() {
+	unsigned short SavedIP = READ_IP;
+	BYTE dest = RAM->Read(SavedIP + 1);
+	BYTE str = RAM->Read(SavedIP + 2);
+	if (!IsReg(dest) || !IsReg(str) || RegType(dest)) {
+		op_exit();
+		return;
+	}
+	ADDR strAddr = ReadFromReg2(str);
+	BYTE itr = 0;
+	while (RAM->Read(strAddr+itr)!=0) {
+		if (itr < 128) {
+			WriteToReg(dest, 0);
+		}
+	}
+	WRITE_IP(SavedIP + 3);
+}
 
 /* 0x40 - 0x4F */
-void CPU::op_cmp_reg() {}
-void CPU::op_cmp_immediate() {}
-void CPU::op_cmp_string() {}
-void CPU::op_is_string() {}
-void CPU::op_is_integer() {}
+void CPU::op_cmp_reg() {
+	unsigned short SavedIP = READ_IP;
+	BYTE first  = RAM->Read(SavedIP + 1);
+	BYTE second = RAM->Read(SavedIP + 2);
+	if (!IsReg(first) || !IsReg(second) || RegType(first) != RegType(second)) {
+		op_exit();
+		return;
+	}
+	if (RegType(first)) {// 1 byte
+		WRITE_ZF(ReadFromReg(first) == ReadFromReg(second));
+	}
+	else {               // 2 bytes
+		WRITE_ZF(ReadFromReg2(first) == ReadFromReg2(second));
+	}
+	WRITE_IP(SavedIP + 3);
+}
+void CPU::op_cmp_immediate() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg = RAM->Read(SavedIP + 1);
+	unsigned short integer = RAM->Read2Bytes(SavedIP + 2);
+	if (!IsReg(reg)) {
+		op_exit();
+		return;
+	}
+	if (RegType(reg)) {// 1 byte
+		WRITE_ZF(ReadFromReg(reg) == integer);
+	}
+	else {               // 2 bytes
+		WRITE_ZF(ReadFromReg2(reg) == integer);
+	}
+	WRITE_IP(SavedIP + 4);
+}
+void CPU::op_cmp_string() {
+	unsigned short SavedIP = READ_IP;
+	BYTE regBuf = RAM->Read(SavedIP + 1);
+	ADDR firstAddr, secondAddr;
+	if (!IsReg(regBuf) || RegType(regBuf)) {
+		op_exit();
+		return;
+	}
+	firstAddr = ReadFromReg2(regBuf);
+	regBuf = RAM->Read(SavedIP + 2);
+	if (!IsReg(regBuf) || RegType(regBuf)) {
+		op_exit();
+		return;
+	}
+	secondAddr = ReadFromReg2(regBuf);
+	BYTE itr = 0, itr2 = 0;
+	while (RAM->Read(firstAddr+itr) != 0) {
+		if (itr > 128) {
+			op_exit();
+			return;
+		}
+		itr++;
+	}
+	while (RAM->Read(secondAddr + itr2) != 0) {
+		if (itr2 > 128) {
+			op_exit();
+			return;
+		}
+		itr2++;
+	}
+	if (itr != itr2) {
+		WRITE_ZF(0);
+	}
+	else {
+		itr = 0;
+		bool FVal = 1;
+		while (itr != itr2)
+		{
+			FVal &= RAM->Read(firstAddr + itr) == RAM->Read(secondAddr + itr);
+			itr++;
+		}
+		WRITE_ZF(FVal);
+	}
+	WRITE_IP(SavedIP + 3);
+}
 
 /* 0x50 - 0x5F */
 void CPU::op_nop() {
@@ -79,7 +260,7 @@ void CPU::op_reg_store() {
 	unsigned short SavedIP = READ_IP;
 	BYTE dest = RAM->Read(SavedIP + 1);
 	BYTE source = RAM->Read(SavedIP + 2);
-	if (!isReg(dest) || !isReg(source)) {
+	if (!IsReg(dest) || !IsReg(source)) {
 		op_exit();
 		return;
 	}
@@ -93,15 +274,15 @@ void CPU::op_peek() {
 	unsigned short SavedIP = READ_IP;
 	unsigned short _Value = RAM->Read2Bytes(RAM->Read2Bytes(SavedIP + 1));
 	BYTE reg  = RAM->Read(SavedIP + 3);
-	if (!isReg(reg)) {
+	if (!IsReg(reg)) {
 		op_exit();
 		return;
 	}
 	if (RegType(reg)) { // 1-byte register
-		WriteToReg(reg, _Value);
+		WriteToReg(reg, _Value % 256);
 	}
 	else {              // 2-byte register
-		WriteToReg(reg, _Value);
+		WriteToReg2(reg, _Value);
 	}
 	WRITE_IP(SavedIP + 4);
 }
@@ -109,7 +290,7 @@ void CPU::op_poke() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg = RAM->Read(SavedIP + 1);
 	ADDR addr= RAM->Read2Bytes(RAM->Read2Bytes(SavedIP + 2));
-	if (!isReg(reg)) {
+	if (!IsReg(reg)) {
 		op_exit();
 		return;
 	}
@@ -134,7 +315,7 @@ void CPU::op_memcpy_reg() {
 	BYTE dest   = RAM->Read(SavedIP + 1);
 	BYTE source = RAM->Read(SavedIP + 2);
 	BYTE size   = RAM->Read(SavedIP + 3);
-	if (!isReg(dest) || !isReg(source) || !isReg(size) || !RegType(dest) || !RegType(source) || !RegType(size)) {
+	if (!IsReg(dest) || !IsReg(source) || !IsReg(size) || !RegType(dest) || !RegType(source) || !RegType(size)) {
 		op_exit();
 		return;
 	}
@@ -159,7 +340,7 @@ void CPU::op_memcpy_stack() {
 
 
 /* 0x70 - 0x7F */
-void CPU::op_stac÷î êk_push() {
+void CPU::op_stack_push() {
 	unsigned short SavedIP = READ_IP;
 	PushStack(RAM->Read2Bytes(SavedIP + 1));
 	WRITE_IP(SavedIP + 3);
@@ -167,7 +348,7 @@ void CPU::op_stac÷î êk_push() {
 void CPU::op_stack_push_reg() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg = RAM->Read(SavedIP + 1);
-	if (!isReg(reg)) {
+	if (!IsReg(reg)) {
 		op_exit();
 		return;
 	}
@@ -190,7 +371,7 @@ void CPU::op_stack_pop_reg() {
 	}
 	unsigned short SavedIP = READ_IP;
 	BYTE reg = RAM->Read(SavedIP + 1);
-	if (!isReg(reg)) {
+	if (!IsReg(reg)) {
 		op_exit();
 		return;
 	}
@@ -220,13 +401,13 @@ void CPU::op_stack_call() {
 
 
 void CPU::WriteToReg2(BYTE reg, unsigned short data) {
-	ProcData->Write2Bytes(reg, data);
+	ProcData->Write2Bytes(GetRegAddr(reg), data);
 }
 unsigned short CPU::ReadFromReg2(BYTE reg) {
 	return ProcData->Read2Bytes(GetRegAddr(reg));
 }
 void CPU::WriteToReg(BYTE reg, BYTE data) {
-	ProcData->Write(reg, data);
+	ProcData->Write(GetRegAddr(reg), data);
 }
 BYTE CPU::ReadFromReg(BYTE reg) {
 	return ProcData->Read(GetRegAddr(reg));
@@ -245,7 +426,7 @@ BYTE CPU::GetRegAddr(BYTE reg) {
 bool CPU::RegType(BYTE reg) {
 	return (reg & 0x20) == 0x20 || isFlag(reg);
 }
-bool CPU::isReg(BYTE reg) {
+bool CPU::IsReg(BYTE reg) {
 	return reg < 0x28;
 }
 bool CPU::isFlag(BYTE reg) {
@@ -254,3 +435,5 @@ bool CPU::isFlag(BYTE reg) {
 #undef IP
 #undef READ_IP
 #undef WRITE_IP
+#undef READ
+#undef WRITE

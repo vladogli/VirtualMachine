@@ -79,18 +79,15 @@ private: // functions
 	void					op_dec();
 
 	/* 0x30 - 0x3F */
-	void					op_string_store();
-	void					op_string_print();
-	void					op_string_concat();
-	void					op_string_system();
-	void					op_string_toint();
+	void					op_string_concat();      // Concat 2 strings
+	void					op_string_toint();       // Convert a string to int
+	void					op_string_size();        // put in register str size
+	void                    op_string_show();
 
 	/* 0x40 - 0x4F */
-	void					op_cmp_reg();
-	void					op_cmp_immediate();
-	void					op_cmp_string();
-	void					op_is_string();
-	void					op_is_integer();
+	void					op_cmp_reg();            // Compare 2 registers
+	void					op_cmp_immediate();      // Compare register with integer
+	void					op_cmp_string();         // Compare 2 strings which are saved in registers
 
 	/* 0x50 - 0x5F */
 	void					op_nop();                // No operation
@@ -137,7 +134,7 @@ private: // functions
 	// is register
 	// 1 - true
 	// 0 - false
-	bool					isReg								(BYTE);
+	bool					IsReg                               (BYTE);
 	
 	// is flag
 	// 1 - true

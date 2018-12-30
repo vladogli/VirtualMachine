@@ -50,7 +50,6 @@ CPU::CPU() {
 		functions[i] = nullptr;
 	}
 	memMatrix = new memory(MATRIX_Y_MAX_SIZE * MATRIX_X_MAX_SIZE); // 160 x 90 symbols
-	stack   = new memory(0xFFFF);
 	ProcData= new memory(0x40);
 	matrix = new BYTE*[MATRIX_Y_MAX_SIZE];
 	for (BYTE i = 0; i < MATRIX_Y_MAX_SIZE; i++) {
@@ -58,7 +57,7 @@ CPU::CPU() {
 	}
 	WRITE_IR(0xFF);
 	WRITE_IP(0x30);
-	WRITE_SP(0);
+	WRITE_SP(40);
 #define init_op(x,y) functions[x] = new std::function<void(void)>(std::bind(&CPU::y, this));
 	init_op(0x0, op_exit);
 	init_op(0x1, op_int_tostring);
@@ -124,19 +123,19 @@ CPU::CPU() {
 
 void CPU::PushStack(unsigned short _Val) {
 	unsigned short SP_Val = READ_SP;
-	if (SP_Val >= 0xFFFE) {
+	if (SP_Val >= 0x240) {
 		throw STACK_OVERFLOW;
 	}
-	stack->Write2Bytes(SP_Val, _Val);
+	RAM->Write2Bytes(SP_Val, _Val);
 	WRITE_SP(SP_Val + 2);
 }
 unsigned short CPU::PopStack() {
 	unsigned short SP_Val = READ_SP;
-	if (SP_Val == 0) {
+	if (SP_Val <= 40) {
 		throw STACK_UNDERFLOW;
 	}
 	WRITE_SP(SP_Val - 2);
-	return stack->Read2Bytes(SP_Val);
+	return RAM->Read2Bytes(SP_Val);
 }
 void CPU::op_exit() {
 	WRITE_IP(0);
@@ -300,7 +299,7 @@ void CPU::op_xor() {
 	unsigned short _Value;
 	if (RegType(first)) {
 		_Value = ReadFromReg(first) ^ ReadFromReg(second);
-		WriteToReg(first, _Value);
+		WriteToReg(first, (unsigned char)_Value);
 	}
 	else {
 		_Value = ReadFromReg2(first) ^ ReadFromReg2(second);
@@ -321,7 +320,7 @@ void CPU::op_or() {
 	unsigned short _Value;
 	if (RegType(first)) {
 		_Value = ReadFromReg(first) | ReadFromReg(second);
-		WriteToReg(first, _Value);
+		WriteToReg(first, (unsigned char)_Value);
 	}
 	else {
 		_Value = ReadFromReg2(first) | ReadFromReg2(second);
@@ -342,7 +341,7 @@ void CPU::op_and() {
 	unsigned short _Value;
 	if (RegType(first)) {
 		_Value = ReadFromReg(first) & ReadFromReg(second);
-		WriteToReg(first, _Value);
+		WriteToReg(first, (unsigned char)_Value);
 	}
 	else {
 		_Value = ReadFromReg2(first) & ReadFromReg2(second);
@@ -375,7 +374,8 @@ void CPU::op_sub() {
 		return;
 	}
 	int _Value = (int)(short int)(ReadFromReg2(first)) - (short int)ReadFromReg2(second);
-	SetFlags(_Value);
+	//TODO
+	// FLAGS_SET
 	WriteToReg2(first, (unsigned short)_Value);
 	WRITE_IP(SavedIP + 3);
 }
@@ -436,7 +436,6 @@ void CPU::op_dec() {
 	short int _Value = ReadFromReg2(reg) - 1;
 	//TODO
 	// FLAGS_SET
-	SetFlags(_Value);
 	WriteToReg2(reg, (unsigned short)_Value);
 	WRITE_IP(SavedIP + 2);
 }
@@ -557,28 +556,20 @@ void CPU::op_cmp_reg() {
 		op_exit();
 		return;
 	}
-	if (RegType(first)) {// 1 byte
-		WRITE_ZF(ReadFromReg(first) == ReadFromReg(second));
-	}
-	else {               // 2 bytes
-		WRITE_ZF(ReadFromReg2(first) == ReadFromReg2(second));
-	}
+	//TODO
+	// FLAGS_SET
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_cmp_immediate() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg = RAM->Read(SavedIP + 1);
-	unsigned short integer = RAM->Read2Bytes(SavedIP + 2);
+	//unsigned short integer = RAM->Read2Bytes(SavedIP + 2);
 	if (!IsReg(reg)) {
 		op_exit();
 		return;
 	}
-	if (RegType(reg)) {// 1 byte
-		WRITE_ZF(ReadFromReg(reg) == integer);
-	}
-	else {               // 2 bytes
-		WRITE_ZF(ReadFromReg2(reg) == integer);
-	}
+	//TODO
+	// FLAGS_SET
 	WRITE_IP(SavedIP + 4);
 }
 void CPU::op_cmp_string() {
@@ -976,6 +967,8 @@ void CPU::op_page() {
 	WRITE_IP(READ_IP + 1);
 }
 
+
+ 
 void CPU::WriteToReg2(BYTE reg, unsigned short data) {
 	ProcData->Write2Bytes(GetRegAddr(reg), data);
 }

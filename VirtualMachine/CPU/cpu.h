@@ -13,11 +13,12 @@ public: // Variables
 // Memory
 	//150 x 60 symbols
 	memory *memMatrix;
-	memory *stack;
 	BYTE **matrix;
-	memory *RAM;
-	memory *inputPort;
-	memory *outPort;
+	//0x0-0x40    - pointers to interrupt events
+	//0x100-0x1FF - pointers to IN
+	//0x200-0x2FF - pointers to OUT
+	//0x300-0xFFFF - not reserved
+	Ram *RAM;
 	bool closed = 0;
 private: 
 // Stack
@@ -66,6 +67,22 @@ private:
 	**  0x0D       NONE                     0x1A               0x                 **
 	**  0x0E       NONE                     0x1C               0x                 **
 	**  0x0F       NONE                     0x1E               0x                 **
+	**  0x10       NONE                     0x20               0x                 **
+	**  0x11       NONE                     0x22               0x                 **
+	**  0x12       NONE                     0x24               0x                 **
+	**  0x13       NONE                     0x26               0x                 **
+	**  0x14       NONE                     0x28               0x                 **
+	**  0x15       NONE                     0x2A               0x                 **
+	**  0x16       NONE                     0x2C               0x                 **
+	**  0x17       NONE                     0x2E               0x                 **
+	**  0x18       NONE                     0x30               0x                 **
+	**  0x19       NONE                     0x32               0x                 **
+	**  0x1A       NONE                     0x34               0x                 **
+	**  0x1B       NONE                     0x36               0x                 **
+	**  0x1C       NONE                     0x38               0x                 **
+	**  0x1D       NONE                     0x3A               0x                 **
+	**  0x1E       NONE                     0x3C               0x                 **
+	**  0x1F       NONE                     0x3E               0x                 **
 	********************************************************************************
 
 	Interrupt registers
@@ -73,6 +90,12 @@ private:
 	IR         0x14           Interrupt Register     0x32
 	IV         0x15-0x16      Interrupt value        0x33
 
+	ConnectToDevice registers
+	ASM(name)  Addr           Desc                   BYTE-CODE 
+	CRH        0x17-0x18      Connect register high  0x34
+	CRL        0x19-0x20      Connect register low   0x35
+	
+	
 	FLAGS
 	ASM(name)  Addr           Desc                   BYTE-CODE 
 	CF         0x20           Carry     Flag         0x10
@@ -374,38 +397,42 @@ private: // functions
 
 	// 0x85                 SWCHR                    SWCHR #REG
 	void                    op_char_show_reg();      // Read from register char and show it
-
-	/*
-	********------              **      **********----
-	**********----               **     ************--
-	************--          ********    **************
-	**************               **     **************
-	**************              **      --------------
-	*/
-	// 0x86                 SCR                      SCR
-	void                    op_scroll();             // Scrolls the screen 
-
-	/*
+	
+													 
+	/*	C - cursor
 	--------------              **      ********------
 	********------               **     **********----
 	**********----          ********    ************--
 	************--               **     **************
-	**************              **      --------------
-	--------------                      --------------
+	**************              **      C-------------
+	C-------------                      --------------
+	*/
+	// 0x86                 SCR                      SCR
+	void                    op_scroll();             // Scrolls the screen 
+
+
+	/*	C - cursor
+	********------              **      **********----
+	**********----               **     ************--
+	************--          ********    **************
+	*************C               **     **************
+	--------------              **      C-------------
 	*/
 	// 0x87                 ENDL                     ENDL
 	void                    op_nextline();           // NEXT_LINE_OPERAND
 
-	/*
-	--------------              **      --------------
+	/*	C - cursor
+	--------------              **      C-------------
 	********------               **     --------------
 	**********----          ********    --------------
 	************--               **     --------------
-	**************              **      --------------
+	*************C              **      --------------
 	*/
 	// 0x88                 CLS                      CLS
 	void                    op_page();               // Clears the screen
 
+	/* 0x90 - 0x9F */
+	
 
 // Register interaction funcs
 

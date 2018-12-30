@@ -54,6 +54,46 @@ public: // Structors
 	// Destructor
 	~memory();
 };
+
+class Ram {
+public:
+	BYTE *RAM;
+	BYTE *IN;
+	BYTE *OUT;
+	// Fill from ADDR to ADDR+SIZE BYTE
+	void Fill(ADDR, SIZE, BYTE);
+
+	// Copy from ADDR1 to ADDR2 SIZE bytes
+	void Copy(ADDR, ADDR, SIZE);
+
+	// Compares 2 blocks of memory
+	bool Compare(ADDR, ADDR, SIZE) const;
+
+	// Moves from ADDR to ADDR SIZE bytes
+	void Move(ADDR, ADDR, SIZE);
+
+	// Read 1 byte on addr
+	BYTE Read(ADDR) const;
+
+	// Read 2 bytes on addr
+	unsigned short Read2Bytes(ADDR) const;
+
+
+	// Write 1 byte on addr
+	void Write(ADDR, BYTE);
+
+	// Write 2 bytes on addr
+	void Write2Bytes(ADDR, unsigned short);
+
+
+	void ReadToDisket(BYTE*&) const;
+	void WriteFromDisket(const BYTE*&);
+public: // Structors
+	// Constructor
+	Ram();
+	// Destructor
+	~Ram();
+};
 #include "memory.cpp"
 #undef ADDR
 #undef SIZE

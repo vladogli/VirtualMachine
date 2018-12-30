@@ -17,11 +17,16 @@
 #define READ_ZF     READ1(ZF)
 #define WRITE_ZF(x) WRITE1(ZF,x)
 
-#define SF 0x23
+#define SF 0x24
 #define READ_SF     READ1(SF)
 #define WRITE_SF(x) WRITE1(SF,x)
 
-#define OF 0x23
+
+#define PF 0x21
+#define READ_PF     READ1(PF)
+#define WRITE_PF(x) WRITE1(PF,x)
+
+#define OF 0x28
 #define READ_OF     READ1(OF)
 #define WRITE_OF(x) WRITE1(OF,x)
 
@@ -55,13 +60,21 @@ CPU::CPU() {
 	WRITE_IP(0x30);
 	WRITE_SP(0);
 #define init_op(x,y) functions[x] = new std::function<void(void)>(std::bind(&CPU::y, this));
-	init_op(0, op_exit);
-	init_op(1, op_int_tostring);
-	init_op(2, op_sleep);
-	init_op(3, op_sleep_reg);
-	init_op(0x10, op_jump_to);
-	init_op(0x11, op_jump_z);
-	init_op(0x12, op_jump_nz);
+	init_op(0x0, op_exit);
+	init_op(0x1, op_int_tostring);
+	init_op(0x2, op_sleep);
+	init_op(0x3, op_sleep_reg);
+	init_op(0x4, op_jump_to);
+	init_op(0x5, op_jump_ift);
+	init_op(0x6, op_jump_ifnt);
+	init_op(0x7, op_jump_or);
+	init_op(0x8, op_jump_nor);
+	init_op(0x9, op_jump_xor);
+	init_op(0xA, op_jump_nxor);
+	init_op(0xB, op_jump_le);
+	init_op(0xC, op_jump_greater);
+	init_op(0xD, op_set_f);
+	init_op(0xE, op_clear_f);
 
 	init_op(0x20, op_xor);
 	init_op(0x21, op_or);
@@ -151,29 +164,130 @@ void CPU::op_sleep_reg() {
 	}
 	WRITE_IP(SavedIP + 1);
 }
-/* 0x10 - 0x1F */
-void CPU::op_jump_to() {
-	ADDR _Value = RAM->Read2Bytes(READ_IP + 1);
-	WRITE_IP(_Value);
-	return;
-}
-void CPU::op_jump_z() {
-	if (READ_ZF) {
-		ADDR _Value = RAM->Read2Bytes(READ_IP + 1);
-		WRITE_IP(_Value);
-		return;
-	}
-	WRITE_IP(READ_IP + 3);
-}
-void CPU::op_jump_nz() {
-	if (!READ_ZF) {
-		ADDR _Value = RAM->Read2Bytes(READ_IP + 1);
-		WRITE_IP(_Value);
-		return;
-	}
-	WRITE_IP(READ_IP + 3);
-}
 
+void CPU::op_jump_to() {
+	unsigned short SavedIP = READ_IP;
+	ADDR addr = RAM->Read2Bytes(SavedIP + 1);
+	WRITE_IP(addr);
+}
+void CPU::op_jump_ift() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg = RAM->Read(SavedIP + 1);
+	if (!IsReg(reg) || !IsFlag(reg)) {
+		op_exit();
+		return;
+	}
+	if (!ReadFromReg(reg)) {
+		return;
+	}
+	ADDR addr = RAM->Read2Bytes(SavedIP + 2);
+	WRITE_IP(addr);
+}
+void CPU::op_jump_ifnt() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg = RAM->Read(SavedIP + 1);
+	if (!IsReg(reg) || !IsFlag(reg)) {
+		op_exit();
+		return;
+	}
+	if (ReadFromReg(reg)) {
+		return;
+	}
+	ADDR addr = RAM->Read2Bytes(SavedIP + 2);
+	WRITE_IP(addr);
+}
+void CPU::op_jump_or() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg1 = RAM->Read(SavedIP + 1);
+	BYTE reg2 = RAM->Read(SavedIP + 2);
+	if (!IsReg(reg1) || !IsFlag(reg1) || !IsReg(reg2) || !IsFlag(reg2)) {
+		op_exit();
+		return;
+	}
+	if (!(ReadFromReg(reg1) || ReadFromReg(reg2))) {
+		return;
+	}
+	ADDR addr = RAM->Read2Bytes(SavedIP + 3);
+	WRITE_IP(addr);
+}
+void CPU::op_jump_nor() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg1 = RAM->Read(SavedIP + 1);
+	BYTE reg2 = RAM->Read(SavedIP + 2);
+	if (!IsReg(reg1) || !IsFlag(reg1) || !IsReg(reg2) || !IsFlag(reg2)) {
+		op_exit();
+		return;
+	}
+	if ((ReadFromReg(reg1) || ReadFromReg(reg2))) {
+		return;
+	}
+	ADDR addr = RAM->Read2Bytes(SavedIP + 3);
+	WRITE_IP(addr);
+}
+void CPU::op_jump_xor() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg1 = RAM->Read(SavedIP + 1);
+	BYTE reg2 = RAM->Read(SavedIP + 2);
+	if (!IsReg(reg1) || !IsFlag(reg1) || !IsReg(reg2) || !IsFlag(reg2)) {
+		op_exit();
+		return;
+	}
+	if (!(ReadFromReg(reg1) ^ ReadFromReg(reg2))) {
+		return;
+	}
+	ADDR addr = RAM->Read2Bytes(SavedIP + 3);
+	WRITE_IP(addr);
+}
+void CPU::op_jump_nxor() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg1 = RAM->Read(SavedIP + 1);
+	BYTE reg2 = RAM->Read(SavedIP + 2);
+	if (!IsReg(reg1) || !IsFlag(reg1) || !IsReg(reg2) || !IsFlag(reg2)) {
+		op_exit();
+		return;
+	}
+	if ((ReadFromReg(reg1) ^ ReadFromReg(reg2))) {
+		return;
+	}
+	ADDR addr = RAM->Read2Bytes(SavedIP + 3);
+	WRITE_IP(addr);
+}
+void CPU::op_jump_le() {
+	unsigned short SavedIP = READ_IP;
+	ADDR addr = RAM->Read2Bytes(SavedIP + 1);
+	if (((READ_SF ^ READ_OF) | READ_ZF)) {
+		return;
+	}
+	WRITE_IP(addr);
+}
+void CPU::op_jump_greater() {
+	unsigned short SavedIP = READ_IP;
+	ADDR addr = RAM->Read2Bytes(SavedIP + 1);
+	if (!((READ_SF ^ READ_OF) | READ_ZF)) {
+		return;
+	}
+	WRITE_IP(addr);
+}
+void CPU::op_set_f() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg = RAM->Read(SavedIP + 1);
+	if (!IsReg(reg) || !IsFlag(reg)) {
+		op_exit();
+		return;
+	}
+	WriteToReg(reg, 1);
+	WRITE_IP(SavedIP + 2);
+}
+void CPU::op_clear_f() {
+	unsigned short SavedIP = READ_IP;
+	BYTE reg = RAM->Read(SavedIP + 1);
+	if (!IsReg(reg) || !IsFlag(reg)) {
+		op_exit();
+		return;
+	}
+	WriteToReg(reg, 0);
+	WRITE_IP(SavedIP + 2);
+}
 /* 0x20 - 0x2F */
 void CPU::op_xor() {
 	unsigned short SavedIP = READ_IP;
@@ -183,12 +297,17 @@ void CPU::op_xor() {
 		op_exit();
 		return;
 	}
+	unsigned short _Value;
 	if (RegType(first)) {
-		WriteToReg(first, ReadFromReg(first) ^ ReadFromReg(second));
+		_Value = ReadFromReg(first) ^ ReadFromReg(second);
+		WriteToReg(first, _Value);
 	}
 	else {
-		WriteToReg2(first,ReadFromReg2(first) ^ ReadFromReg2(second));
+		_Value = ReadFromReg2(first) ^ ReadFromReg2(second);
+		WriteToReg2(first, _Value);
 	}
+	//TODO
+	// FLAGS_SET
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_or() {
@@ -199,12 +318,17 @@ void CPU::op_or() {
 		op_exit();
 		return;
 	}
+	unsigned short _Value;
 	if (RegType(first)) {
-		WriteToReg(first, ReadFromReg(first) || ReadFromReg(second));
+		_Value = ReadFromReg(first) | ReadFromReg(second);
+		WriteToReg(first, _Value);
 	}
 	else {
-		WriteToReg2(first, ReadFromReg2(first) || ReadFromReg2(second));
+		_Value = ReadFromReg2(first) | ReadFromReg2(second);
+		WriteToReg2(first, _Value);
 	}
+	//TODO
+	// FLAGS_SET
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_and() {
@@ -215,12 +339,17 @@ void CPU::op_and() {
 		op_exit();
 		return;
 	}
+	unsigned short _Value;
 	if (RegType(first)) {
-		WriteToReg(first, ReadFromReg(first) == ReadFromReg(second));
+		_Value = ReadFromReg(first) & ReadFromReg(second);
+		WriteToReg(first, _Value);
 	}
 	else {
-		WriteToReg2(first, ReadFromReg2(first) == ReadFromReg2(second));
+		_Value = ReadFromReg2(first) & ReadFromReg2(second);
+		WriteToReg2(first, _Value);
 	}
+	//TODO
+	// FLAGS_SET
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_add() {
@@ -231,17 +360,10 @@ void CPU::op_add() {
 		op_exit();
 		return;
 	}
-	unsigned int _Value = (unsigned int)(ReadFromReg2(first)) + ReadFromReg2(second);
-	if (_Value > 65535) {
-		WRITE_OF(1);
-	}
-	else if (_Value == 0){
-		WRITE_ZF(0);
-	}
-	else {
-		WRITE_OF(0);
-	}
+	int _Value = (int)(short int)(ReadFromReg2(first)) + (short int)ReadFromReg2(second);
 	WriteToReg2(first, (unsigned short)_Value);
+	//TODO
+	// FLAGS_SET
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_sub() {
@@ -252,19 +374,8 @@ void CPU::op_sub() {
 		op_exit();
 		return;
 	}
-	short _Value = (ReadFromReg2(first)) - ReadFromReg2(second);
-	if (_Value < 0) {
-		WRITE_SF(1);
-		WRITE_ZF(0);
-	}
-	else if(_Value == 0){
-		WRITE_SF(0);
-		WRITE_ZF(1);
-	}
-	else {
-		WRITE_ZF(0);
-		WRITE_SF(0);
-	}
+	int _Value = (int)(short int)(ReadFromReg2(first)) - (short int)ReadFromReg2(second);
+	SetFlags(_Value);
 	WriteToReg2(first, (unsigned short)_Value);
 	WRITE_IP(SavedIP + 3);
 }
@@ -283,6 +394,8 @@ void CPU::op_mul() {
 	else {
 		WRITE_OF(0);
 	}
+	//TODO
+	// FLAGS_SET
 	WriteToReg2(first, (unsigned short)_Value);
 	WRITE_IP(SavedIP + 3);
 }
@@ -295,6 +408,8 @@ void CPU::op_div() {
 		return;
 	}
 	unsigned short _Value = ReadFromReg2(first) / ReadFromReg2(second);
+	//TODO
+	// FLAGS_SET
 	WriteToReg2(first, _Value);
 	WRITE_IP(SavedIP + 3);
 }
@@ -306,18 +421,8 @@ void CPU::op_inc() {
 		return;
 	}
 	short int _Value = ReadFromReg2(reg) + 1;
-	WRITE_SF(0);
-	WRITE_ZF(0);
-	WRITE_OF(0);
-	if (_Value < 0) {
-		WRITE_SF(1);
-	}
-	else if (_Value == 0) {
-		WRITE_ZF(1);
-	}
-	else if (_Value == 32767) {
-		WRITE_OF(1);
-	}
+	//TODO
+	// FLAGS_SET
 	WriteToReg2(reg, _Value);
 	WRITE_IP(SavedIP + 2);
 }
@@ -329,14 +434,9 @@ void CPU::op_dec() {
 		return;
 	}
 	short int _Value = ReadFromReg2(reg) - 1;
-	WRITE_SF(0);
-	WRITE_ZF(0);
-	if (_Value < 0) {
-		WRITE_SF(1);
-	}
-	else if (_Value == 0) {
-		WRITE_ZF(1);
-	}
+	//TODO
+	// FLAGS_SET
+	SetFlags(_Value);
 	WriteToReg2(reg, (unsigned short)_Value);
 	WRITE_IP(SavedIP + 2);
 }

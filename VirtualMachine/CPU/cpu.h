@@ -95,12 +95,10 @@ private: // functions
 	// BYTE-CODE            NAME                    HOW TO USE
 
 	// 0x00                 EXT                     EXT
-	void					op_exit();              // exit
+	void                    op_exit();              // exit
 
 	// 0x01                 ITOS                    ITOS #REG
-	void					op_int_tostring();      // itos
-
-
+	void                    op_int_tostring();      // itos
 
 	// 0x02                 SLP                     ITOS $LLHH
 	void                    op_sleep();
@@ -108,25 +106,101 @@ private: // functions
 	// 0x03                 SLP                     ITOS #REG
 	void                    op_sleep_reg();
 
+	
+	// 0x04                 JMP                     JMP $LLHH
+	void                    op_jump_to();           // Jump to given addr
+
+	// OPERAND              EXPANSION               Desc
+	// JO                   JIF OF, $LLHH           Jump if overflow
+	// JC                   JIF CF, $LLHH           Jump if carry
+	// JB                   JIF CF, $LLHH           Jump if below
+	// JNAE                 JIF CF, $LLHH           Jump if not above or equal
+	// JE                   JIF ZF, $LLHH           Jump if equal
+	// JZ                   JIF ZF, $LLHH           Jump if zero
+	// JS                   JIF SF, $LLHH           Jump if sign
+	// JP                   JIF PF, $LLHH           Jump if parity
+	// JPE                  JIF PF, $LLHH           Jump if parity even
+
+	// 0x05                 JIF                     JIF  #FLAG, $LLHH
+	void                    op_jump_ift();          // Jump to given addr if flag is true
+
+	// OPERAND              EXPANSION               Desc
+	// JNO                  JNIF OF, $LLHH          Jump if not overflow
+	// JNC                  JNIF CF, $LLHH          Jump if not carry
+	// JAE                  JNIF CF, $LLHH          Jump if above or equal
+	// JNB                  JNIF CF, $LLHH          Jump if not below
+	// JNE                  JNIF ZF, $LLHH          Jump if not equal
+	// JNZ                  JNIF ZF, $LLHH          Jump if not zero
+	// JNS                  JNIF SF, $LLHH          Jump if not sign
+	// JNP                  JNIF PF, $LLHH          Jump if not parity
+	// JPO                  JNIF PF, $LLHH          Jump if parity odd
+
+	// 0x06                 JNIF                    JNIF  #FLAG, $LLHH
+	void                    op_jump_ifnt();         // Jump to given addr if flag is true
+
+	// OPERAND              EXPANSION               Desc
+	// JBE                  JOR CF, ZF, $LLHH       Jump if below or equal
+	// JNA                  JOR CF, ZF, $LLHH       Jump if not above
+	// 0x06                 JOR                     JOR  #FLAG, #FLAG, $LLHH
+	void                    op_jump_or();           // Jump to given addr if one of given flags is true
+
+	// OPERAND              EXPANSION               Desc
+	// JNBE                 JNOR CF, ZF, $LLHH      Jump if not below or equal
+	// JA                   JNOR CF, ZF, $LLHH      Jump if above
+	// 0x08                 JNOR                    JNOR  #FLAG, #FLAG, $LLHH
+	void                    op_jump_nor();          // Jump to given addr if every flag is false
+	
+
+	// OPERAND              EXPANSION               Desc
+	// JL                   JXOR SF, OF, $LLHH      Jump if less
+	// JNGE                 JXOR SF, OF, $LLHH      Jump if not greater nor equal
+	// 0x09                 JXOR                    JXOR  #FLAG, #FLAG, $LLHH
+	void                    op_jump_xor();          // Jump to given addr if ONLY one of given flags is true
 
 
+	// OPERAND              EXPANSION               Desc
+	// JNL                  JNXOR SF, OF, $LLHH     Jump if not less
+	// JGE                  JNXOR SF, OF, $LLHH     Jump if greater or equal
+	// 0x0A                 JNXOR                   JNXOR  #FLAG, #FLAG, $LLHH
+	void                    op_jump_nxor();         // Jump to given addr if given flags is equal
 
+	// JLE (less or equal)
+	// 0x0B                 JNG                     JLE $LLHH
+	void                    op_jump_le();           // Jump to given addr if (SF xor OF) or ZF = 1
+
+	// JNLE (not less nor equal)
+	// 0x0C                 JG                      JG $LLHH
+	void                    op_jump_greater();      // Jump to given addr if (SF xor OF) or ZF = 0
+
+	// OPERAND              EXPANSION               Desc
+	// STC                  STF CF                  Sets carry            flag to 1
+	// STP                  STF PF                  Sets parity           flag to 1
+	// STA                  STF AF                  Sets auxiliary carry  flag to 1
+	// STZ                  STF ZF                  Sets zero             flag to 1
+	// STS                  STF SF                  Sets sign             flag to 1
+	// STT                  STF TF                  Sets trap             flag to 1
+	// STI                  STF IF                  Sets interrupt enable flag to 1
+	// STD                  STF DF                  Sets direction        flag to 1
+	// STO                  STF OF                  Sets overflow         flag to 1
+	// 0x0D                 STF                     STF #REG
+	void                    op_set_f();             // Set the given flag to 1
+
+
+	// CLC                  CLF CF                  Sets carry            flag to 0
+	// CLP                  CLF PF                  Sets parity           flag to 0
+	// CLA                  CLF AF                  Sets auxiliary carry  flag to 0
+	// CLZ                  CLF ZF                  Sets zero             flag to 0
+	// CLS                  CLF SF                  Sets sign             flag to 0
+	// CLT                  CLF TF                  Sets trap             flag to 0
+	// CLI                  CLF IF                  Sets interrupt enable flag to 0
+	// CLD                  CLF DF                  Sets direction        flag to 0
+	// CLO                  CLF OF                  Sets overflow         flag to 0
+	// 0x0E                 CLF                     CLF #REG
+	void                    op_clear_f();           // Set the given flag to 0
 
 
 	/* 0x10 - 0x1F */
-
-	// BYTE-CODE            NAME                    HOW TO USE
-
-	// 0x10                 JMP                     JMP $LLHH
-	void					op_jump_to();           // Jump to given addr
-
-	// 0x11                 JZ                      JZ $LLHH
-	void					op_jump_z();            // Jump to given addr if Z flag is true
-
-	// 0x12                 JNZ                     JNZ $LLHH
-	void					op_jump_nz();           // Jump to given addr if Z flag is false
-
-
+	
 
 
 
@@ -135,31 +209,31 @@ private: // functions
 	// BYTE-CODE            NAME                    HOW TO USE
 
 	// 0x20                 XOR                     XOR #REG, #REG
-	void					op_xor();               // XOR next 2 regs
+	void                    op_xor();               // XOR next 2 regs
 
 	// 0x21                 OR                      OR #REG, #REG
-	void					op_or();                // OR  next 2 regs
+	void                    op_or();                // OR  next 2 regs
 
 	// 0x22                 AND                     AND #REG, #REG
-	void					op_and();               // AND next 2 regs
+	void                    op_and();               // AND next 2 regs
 
 	// 0x23                 ADD                     ADD #REG, #REG
-	void					op_add();               // add next 2 regs
+	void                    op_add();               // add next 2 regs
 
 	// 0x24                 SUB                     SUB #REG, #REG
-	void					op_sub();               // sub next 2 regs
+	void                    op_sub();               // sub next 2 regs
 
 	// 0x25                 MUL                     MUL #REG, #REG
-	void					op_mul();               // multiply next 2 regs
+	void                    op_mul();               // multiply next 2 regs
 
 	// 0x26                 DIV                     DIV #REG, #REG
-	void					op_div();               // divide next 2 regs
+	void                    op_div();               // divide next 2 regs
 
 	// 0x27                 INC                     INC #REG, #REG
-	void					op_inc();               // increment next reg
+	void                    op_inc();               // increment next reg
 
 	// 0x28                 DEC                     DEC #REG, #REG
-	void					op_dec();               // decrement next reg
+	void                    op_dec();               // decrement next reg
 
 
 
@@ -172,17 +246,17 @@ private: // functions
 	// in first REG addr where we place a concated str
 	// in second & third - strings what we should concat
 	// 0x30                 CONCAT                   CONCAT #REG, #REG, #REG
-	void					op_string_concat();      // Concat 2 strings
+	void                    op_string_concat();      // Concat 2 strings
 
 	// in second REG - addr of string
 	// in first we place a result
 	// 0x31                 TOI                      TOI #REG, #REG
-	void					op_string_toint();       // Convert a string to int
+	void                    op_string_toint();       // Convert a string to int
 
 	// in second REG - addr of string
 	// in first we place a result
 	// 0x32                 SLN                      SLN #REG, #REG
-	void					op_string_size();        // put in register str size
+	void                    op_string_size();        // put in register str size
 
 
 
@@ -193,13 +267,13 @@ private: // functions
 	// BYTE-CODE            NAME                     HOW TO USE
 
 	// 0x40                 CMP                      CMP #REG, #REG
-	void					op_cmp_reg();            // Compare 2 registers
+	void                    op_cmp_reg();            // Compare 2 registers
 
 	// 0x41                 CMP                      CMP #REG, $LLHH
-	void					op_cmp_immediate();      // Compare register with integer
+	void                    op_cmp_immediate();      // Compare register with integer
 
 	// 0x42                 CMPS                     CMPS #REG, #REG
-	void					op_cmp_string();         // Compare 2 strings which are saved in registers
+	void                    op_cmp_string();         // Compare 2 strings which are saved in registers
 
 
 
@@ -210,12 +284,12 @@ private: // functions
 	// BYTE-CODE            NAME                     HOW TO USE
 
 	// 0x50                 NOP
-	void					op_nop();                // No operation
+	void                    op_nop();                // No operation
 
 	// first  REG - dest
 	// second REG - source
 	// 0x51                 MOV                      MOV #REG, #REG                      
-	void					op_reg_store();          // Put reg1 value to reg2
+	void                    op_reg_store();          // Put reg1 value to reg2
 
 
 
@@ -226,29 +300,29 @@ private: // functions
 	// BYTE-CODE            NAME                     HOW TO USE
 
 	// 0x60                 MOV                      MOV #REG, $LLHH
-	void					op_peek();               // Write value  to register
+	void                    op_peek();               // Write value  to register
 
 	// 0x61                 MOV                      MOV $LLHH, #REG
-	void					op_poke();               // Write register value to addr 
+	void                    op_poke();               // Write register value to addr 
 
 	// first  - dest   addr
 	// second - source addr
 	// third  - size
 	// 0x62                 CPY                      CPY $LLHH, $LLHH, $LLHH
-	void					op_memcpy();             // Copy size bytes of data from addr to addr
+	void                    op_memcpy();             // Copy size bytes of data from addr to addr
 
 	// first  - dest   addr
 	// second - source addr
 	// third  - size
 	// 0x63                 CPY                      CPY #REG, #REG, #REG
-	void					op_memcpy_reg();         // like a memcpy, but values saved in registers
+	void                    op_memcpy_reg();         // like a memcpy, but values saved in registers
 	
 	// Stack:
 	// SIZE									 
 	// source
 	// size
 	// 0x64                 CPY                      CPY
-	void					op_memcpy_stack();       // like a memcpy, but takes values from stack
+	void                    op_memcpy_stack();       // like a memcpy, but takes values from stack
 
 
 
@@ -259,21 +333,21 @@ private: // functions
 	// BYTE-CODE            NAME                     HOW TO USE
 
 	// 0x70                 PUSH                     PUSH $LLHH
-	void					op_stack_push();         // Push to stack next 2 bytes
+	void                    op_stack_push();         // Push to stack next 2 bytes
 
 	// 0x71                 PUSH                     PUSH #REG
-	void					op_stack_push_reg();     // Push to stack reg value
+	void                    op_stack_push_reg();     // Push to stack reg value
 
 	// 0x72                 POP                      POP #REG
-	void					op_stack_pop_reg();      // Pop from stack to register
+	void                    op_stack_pop_reg();      // Pop from stack to register
 	
 	// Stack:
 	// Return addr
 	// 0x73                 RET                      RET
-	void					op_stack_ret();          // Return
+	void                    op_stack_ret();          // Return
 
 	// 0x74                 CALL                     CALL $LLHH
-	void					op_stack_call();         // Call point
+	void                    op_stack_call();         // Call point
 
 
 
@@ -284,22 +358,22 @@ private: // functions
 	// BYTE-CODE            NAME                     HOW TO USE
 
 	// 0x80                 SWSTR                    SWSTR $LLHH
-	void					op_string_show();        // Show str from addr
+	void                    op_string_show();        // Show str from addr
 
 	// 0x81                 SWSTR                    SWSTR #REG
-	void					op_string_show_reg();    // Read from register pointer to str and show it
+	void                    op_string_show_reg();    // Read from register pointer to str and show it
 
 	// 0x82                 SWINT                    SWINT $LLHH
-	void					op_int_show();           // Show int
+	void                    op_int_show();           // Show int
 
 	// 0x83                 SWINT                    SWINT #REG
-	void					op_int_show_reg();       // Read from register int and show it
+	void                    op_int_show_reg();       // Read from register int and show it
 
 	// 0x84                 SWCHR                    SWCHR $LLHH
-	void					op_char_show();          // Show char
+	void                    op_char_show();          // Show char
 
 	// 0x85                 SWCHR                    SWCHR #REG
-	void					op_char_show_reg();      // Read from register char and show it
+	void                    op_char_show_reg();      // Read from register char and show it
 
 	/*
 	********------              **      **********----
@@ -336,34 +410,34 @@ private: // functions
 // Register interaction funcs
 
 	// Write 2 bytes to register 
-	void					WriteToReg2							(BYTE, unsigned short);
+	void                    WriteToReg2							(BYTE, unsigned short);
 	
 	// Read 2 bytes from register 
 	unsigned short			ReadFromReg2						(BYTE);
 	
 	// Write byte to register 
-	void					WriteToReg							(BYTE, BYTE);
+	void                    WriteToReg							(BYTE, BYTE);
 	
 	// Read byte from register
-	BYTE					ReadFromReg							(BYTE);
+	BYTE                    ReadFromReg							(BYTE);
 	
 	// Get register addr in ProcData
-	BYTE					GetRegAddr							(BYTE);
+	BYTE                    GetRegAddr							(BYTE);
 	
 	// Register type
 	// 1 - 1 byte
 	// 0 - 2 byte
-	bool					RegType								(BYTE);
+	bool                    RegType								(BYTE);
 	
 	// is register
 	// 1 - true
 	// 0 - false
-	bool					IsReg                               (BYTE);
+	bool                    IsReg                               (BYTE);
 	
 	// is flag
 	// 1 - true
 	// 0 - false
-	bool					IsFlag								(BYTE);
+	bool                    IsFlag								(BYTE);
 public: 
 	void keyPressed(BYTE key);
 	void NextOp();

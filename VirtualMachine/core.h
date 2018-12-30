@@ -7,8 +7,7 @@ class VirtualMachine {
 private: // Variables
 	CPU *core;
 	bool closed = 1;
-	memory *RAM;
-	memory *outPort;
+	Ram *RAM;
 	boost::thread *thread;
 	const unsigned long long unique_id;
 public:
@@ -28,12 +27,9 @@ public:
 	void Boot();
 	void SaveToDisket();
 	bool LoadFromDisket();
-	void SaveLive();
-	bool LoadLive();
-
 	unsigned char**& GetMatrix();
 	void ReceiveKey(unsigned char byte);
 public:  // structors
-	VirtualMachine(unsigned long long unique_id, std::function<void(void)>, bool = 0);
+	VirtualMachine(unsigned long long unique_id, std::function<void(void)>);
 };
 #include "core.cpp"

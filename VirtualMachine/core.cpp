@@ -1,18 +1,11 @@
 #include "core.h"
 
 
-VirtualMachine::VirtualMachine(unsigned long long unique_id1, std::function<void(void)>, bool x) : unique_id(unique_id1){
+VirtualMachine::VirtualMachine(unsigned long long unique_id1, std::function<void(void)>) : unique_id(unique_id1){
 	core = new CPU();
-	RAM = new memory(0xFFFF);
-	outPort = new memory(0xFFFF);
+	RAM = new Ram();
 	core->RAM = RAM;
-	core->outPort = outPort;
-	if (x) {
-		LoadLive();
-	}
-	else {
-		LoadFromDisket();
-	}
+	LoadFromDisket();
 }
 void VirtualMachine::PrivateUpdate() {
 	core->NextOp();
@@ -61,10 +54,13 @@ void VirtualMachine::Boot() {
 
 void VirtualMachine::SaveToDisket() {
 	boost::filesystem::ofstream File(disketSaveFolder + std::to_wstring(unique_id) + L".iso", std::ios_base::binary);
-	for (size_t i = 0; i < RAM->memSize; i++) {
-		File << RAM->mem[i];
+	unsigned char *_value = new unsigned char[0x10000];
+	RAM->ReadToDisket(_value);
+	for (size_t i = 0; i < 0xFFFF; i++) {
+		File << _value[i];
 	}
 	File.close();
+	delete[] _value;
 }
 bool VirtualMachine::LoadFromDisket() {
 	if (!boost::filesystem::exists(disketSaveFolder + std::to_wstring(unique_id) + L".iso")) {
@@ -78,47 +74,7 @@ bool VirtualMachine::LoadFromDisket() {
 	File.close();
 	if (_Val.size() > 0) {
 		const unsigned char* _v = reinterpret_cast<const unsigned char*>(_Val.c_str());
-		RAM->Write(0, _v, 0xFFFF);
-	}
-	return 1;
-}
-void VirtualMachine::SaveLive() {
-	boost::filesystem::ofstream File(disketSaveFolder + std::to_wstring(unique_id) + L".LRAM", std::ios_base::binary);
-	for (size_t i = 0; i < RAM->memSize; i++) {
-		File << RAM->mem[i];
-	}
-	File.close();
-	File.open(disketSaveFolder + std::to_wstring(unique_id) + L".LSTACK", std::ios_base::binary);
-	for (size_t i = 0; i < core->RAM->memSize; i++) {
-		File << core->stack->mem[i];
-	}
-	File.close();
-}
-bool VirtualMachine::LoadLive() {
-	if (!boost::filesystem::exists(disketSaveFolder + std::to_wstring(unique_id) + L".LRAM") ||
-		!boost::filesystem::exists(disketSaveFolder + std::to_wstring(unique_id) + L".LSTACK")) {
-		return 0;
-	}
-	boost::filesystem::ifstream File(disketSaveFolder + std::to_wstring(unique_id) + L".LRAM");
-	std::string _Val, _Val1;
-	while (getline(File, _Val1)) {
-		_Val += _Val1;
-	}
-	File.close();
-	if (_Val.size() > 0) {
-		const unsigned char* _v = reinterpret_cast<const unsigned char*>(_Val.c_str());
-		RAM->Write(0, _v, 0xFFFF);
-	}
-
-	File.open(disketSaveFolder + std::to_wstring(unique_id) + L".LSTACK");
-	_Val = "";
-	while (getline(File, _Val1)) {
-		_Val += _Val1;
-	}
-	File.close();
-	if (_Val.size() > 0) {
-		const unsigned char* _v = reinterpret_cast<const unsigned char*>(_Val.c_str());
-		core->stack->Write(0, _v, 0xFFFF);
+		RAM->WriteFromDisket(_v);
 	}
 	return 1;
 }

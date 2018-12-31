@@ -1,4 +1,6 @@
 #include "cpu.h"
+#define DEBUG_MODE
+
 
 #define READ(v)    ProcData->Read2Bytes(v)
 #define WRITE(x,v) ProcData->Write2Bytes(x, v)
@@ -1044,6 +1046,20 @@ void CPU::op_char_show_reg() {
 	}
 	BYTE X = ReadFromReg(MX);
 	BYTE Y = ReadFromReg(MY);
+	BYTE _value = ReadFromReg(reg);
+	if (_value == '\n' || _value == '\r') {
+		op_nextline();
+		WRITE_IP(SavedIP + 2);
+		return;
+	}
+	if (_value == '\b') {
+		matrix[Y][X] = ' ';
+		if (X > 0) {
+			WriteToReg(MX, X - 1);
+		}
+		WRITE_IP(SavedIP + 2);
+		return;
+	}
 	if (X + 1 > MATRIX_X_MAX_SIZE) {
 		if (Y + 1 == MATRIX_Y_MAX_SIZE) {
 			op_scroll();
@@ -1056,7 +1072,7 @@ void CPU::op_char_show_reg() {
 	else {
 		X++;
 	}
-	matrix[Y][X] = ReadFromReg(reg);
+	matrix[Y][X] = _value;
 	WriteToReg(MX, X);
 	WriteToReg(MY, Y);
 	WRITE_IP(SavedIP + 2);
@@ -1090,6 +1106,7 @@ void CPU::op_scroll() {
 	for (BYTE i = 1; i < MATRIX_Y_MAX_SIZE; i++) {
 		memcpy(matrix[i - 1], matrix[i], MATRIX_X_MAX_SIZE);
 	}
+	memset(matrix[ReadFromReg(MY)], 0, MATRIX_X_MAX_SIZE);
 	WriteToReg(MY, ReadFromReg(MY) - 1);
 }
 void CPU::op_nextline() {
@@ -1182,6 +1199,12 @@ bool CPU::IsFlag(BYTE reg) {
 	return reg >= 10 && reg <= 18;
 }
 void CPU::NextOp() {
+#ifdef DEBUG_MODE
+	BYTE VIR = READ_IR;
+	BYTE VIF = READ_IF;
+	ADDR VIP = READ_IP;
+	BYTE OP = RAM->Read(READ_IP);
+#endif
 	if (READ_IR != 0xFF) {
 		if (!READ_IF) {
 			PushStack(READ_IP);

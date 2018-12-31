@@ -1089,25 +1089,25 @@ void CPU::op_close_connection() {
 void CPU::op_open_port() {
 	unsigned long long int connectID = READ_CRH * 0x10000 + READ_CRL;
 	if (IoIsPortOpened(connectID)) {
-		WRITE_ÑERR(1);
+		WRITE_CERR(1);
 		return;
 	}
-	WRITE_ÑERR(0);
+	WRITE_CERR(0);
 	OpenPort();
 	WRITE_IP(READ_IP + 1);
 }
 void CPU::op_close_port() {
 	unsigned long long int connectID = READ_CRH * 0x10000 + READ_CRL;
 	if (IoIsPortOpened(connectID)) {
-		WRITE_ÑERR(1);
+		WRITE_CERR(1);
 		return;
 	}
-	WRITE_ÑERR(0);
+	WRITE_CERR(0);
 	ClosePort();
 	WRITE_IP(READ_IP + 1);
 }
 void CPU::op_port_get_state() {
-	WRITE_ÑERR(GetPortState());
+	WRITE_CERR(GetPortState());
 	WRITE_IP(READ_IP + 1);
 }
 

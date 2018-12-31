@@ -59,9 +59,9 @@
 #define WRITE_FERR(x) WRITE(FERR,x)
 #define READ_FERR   READ(FERR)
 
-#define ÑERR 0x1B
-#define WRITE_ÑERR(x) WRITE(ÑERR,x)
-#define READ_ÑERR   READ(ÑERR)
+#define CERR 0x1B
+#define WRITE_CERR(x) WRITE(CERR,x)
+#define READ_CERR   READ(CERR)
 
 #define FS 0x2B
 #define WRITE_FS(x) WRITE1(FS,x)

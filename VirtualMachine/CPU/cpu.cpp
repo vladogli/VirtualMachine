@@ -21,6 +21,10 @@
 #define READ_SF     READ1(SF)
 #define WRITE_SF(x) WRITE1(SF,x)
 
+#define CF 0x24
+#define READ_CF     READ1(CF)
+#define WRITE_CF(x) WRITE1(CF,x)
+
 
 #define PF 0x21
 #define READ_PF     READ1(PF)
@@ -288,6 +292,10 @@ void CPU::op_clear_f() {
 	WRITE_IP(SavedIP + 2);
 }
 /* 0x20 - 0x2F */
+#define SwitchReg(reg) ((RegType(reg)) ? (ReadFromReg(reg)) : ReadFromReg2(reg))
+#define WriteReg(reg, _Value) \
+if(RegType(reg)) { WriteToReg(reg, (unsigned char)_Value); } \
+else  { WriteToReg2(reg, (unsigned short)_Value); }
 void CPU::op_xor() {
 	unsigned short SavedIP = READ_IP;
 	BYTE first = RAM->Read(SavedIP + 1);
@@ -296,17 +304,21 @@ void CPU::op_xor() {
 		op_exit();
 		return;
 	}
-	unsigned short _Value;
-	if (RegType(first)) {
-		_Value = ReadFromReg(first) ^ ReadFromReg(second);
-		WriteToReg(first, (unsigned char)_Value);
+
+	int _Value = (int)(short int)SwitchReg(first) ^ (short int)SwitchReg(second);
+	WriteReg(first, _Value);
+	if (_Value == 0) {
+		WRITE_ZF(1);
 	}
 	else {
-		_Value = ReadFromReg2(first) ^ ReadFromReg2(second);
-		WriteToReg2(first, _Value);
+		WRITE_ZF(0);
 	}
-	//TODO
-	// FLAGS_SET
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_or() {
@@ -317,17 +329,20 @@ void CPU::op_or() {
 		op_exit();
 		return;
 	}
-	unsigned short _Value;
-	if (RegType(first)) {
-		_Value = ReadFromReg(first) | ReadFromReg(second);
-		WriteToReg(first, (unsigned char)_Value);
+	int _Value = (int)(short int)SwitchReg(first) | (short int)SwitchReg(second);
+	WriteReg(first, _Value);
+	if (_Value == 0) {
+		WRITE_ZF(1);
 	}
 	else {
-		_Value = ReadFromReg2(first) | ReadFromReg2(second);
-		WriteToReg2(first, _Value);
+		WRITE_ZF(0);
 	}
-	//TODO
-	// FLAGS_SET
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_and() {
@@ -338,17 +353,20 @@ void CPU::op_and() {
 		op_exit();
 		return;
 	}
-	unsigned short _Value;
-	if (RegType(first)) {
-		_Value = ReadFromReg(first) & ReadFromReg(second);
-		WriteToReg(first, (unsigned char)_Value);
+	int _Value = (int)(short int)SwitchReg(first) & (short int)SwitchReg(second);
+	WriteReg(first, _Value);
+	if (_Value == 0) {
+		WRITE_ZF(1);
 	}
 	else {
-		_Value = ReadFromReg2(first) & ReadFromReg2(second);
-		WriteToReg2(first, _Value);
+		WRITE_ZF(0);
 	}
-	//TODO
-	// FLAGS_SET
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_add() {
@@ -359,10 +377,26 @@ void CPU::op_add() {
 		op_exit();
 		return;
 	}
-	int _Value = (int)(short int)(ReadFromReg2(first)) + (short int)ReadFromReg2(second);
-	WriteToReg2(first, (unsigned short)_Value);
-	//TODO
-	// FLAGS_SET
+	int _Value = (int)(short int)SwitchReg(first) + (short int)SwitchReg(second);
+	WriteReg(first, _Value);
+	if (_Value == 0) {
+		WRITE_ZF(1);
+	}
+	else {
+		WRITE_ZF(0);
+	}
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
+	if (_Value < 0x8000 || _Value > 0x7FFF) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+	}
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_sub() {
@@ -373,10 +407,26 @@ void CPU::op_sub() {
 		op_exit();
 		return;
 	}
-	int _Value = (int)(short int)(ReadFromReg2(first)) - (short int)ReadFromReg2(second);
-	//TODO
-	// FLAGS_SET
-	WriteToReg2(first, (unsigned short)_Value);
+	int _Value = (int)(short int)SwitchReg(first) - (short int)SwitchReg(second);
+	WriteReg(first, _Value);
+	if (_Value == 0) {
+		WRITE_ZF(1);
+	}
+	else {
+		WRITE_ZF(0);
+	}
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
+	if (_Value < 0x8000 || _Value > 0x7FFF) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+	}
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_mul() {
@@ -387,16 +437,26 @@ void CPU::op_mul() {
 		op_exit();
 		return;
 	}
-	unsigned int _Value = (unsigned int)(ReadFromReg2(first)) * ReadFromReg2(second);
-	if (_Value > 65535) {
-		WRITE_OF(1);
+	int _Value = (int)(short int)SwitchReg(first) * (short int)SwitchReg(second);
+	WriteReg(first, _Value);
+	if (_Value == 0) {
+		WRITE_ZF(1);
 	}
 	else {
-		WRITE_OF(0);
+		WRITE_ZF(0);
 	}
-	//TODO
-	// FLAGS_SET
-	WriteToReg2(first, (unsigned short)_Value);
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
+	if (_Value < 0x8000 || _Value > 0x7FFF) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+	}
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_div() {
@@ -407,10 +467,26 @@ void CPU::op_div() {
 		op_exit();
 		return;
 	}
-	unsigned short _Value = ReadFromReg2(first) / ReadFromReg2(second);
-	//TODO
-	// FLAGS_SET
-	WriteToReg2(first, _Value);
+	int _Value = (int)(short int)SwitchReg(first) / (short int)SwitchReg(second);
+	WriteReg(first, _Value);
+	if (_Value == 0) {
+		WRITE_ZF(1);
+	}
+	else {
+		WRITE_ZF(0);
+	}
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
+	if (_Value < 0x8000 || _Value > 0x7FFF) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+	}
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_inc() {
@@ -420,10 +496,26 @@ void CPU::op_inc() {
 		op_exit();
 		return;
 	}
-	short int _Value = ReadFromReg2(reg) + 1;
-	//TODO
-	// FLAGS_SET
-	WriteToReg2(reg, _Value);
+	int _Value = (int)(short int)SwitchReg(reg) + 1;
+	if (_Value == 0) {
+		WRITE_ZF(1);
+	}
+	else {
+		WRITE_ZF(0);
+	}
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
+	if (_Value < 0x8000 || _Value > 0x7FFF) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+		WriteReg(reg, (unsigned short)_Value);
+	}
 	WRITE_IP(SavedIP + 2);
 }
 void CPU::op_dec() {
@@ -433,10 +525,26 @@ void CPU::op_dec() {
 		op_exit();
 		return;
 	}
-	short int _Value = ReadFromReg2(reg) - 1;
-	//TODO
-	// FLAGS_SET
-	WriteToReg2(reg, (unsigned short)_Value);
+	int _Value = (int)(short int)SwitchReg(reg) + 1;
+	if (_Value == 0) {
+		WRITE_ZF(1);
+	}
+	else {
+		WRITE_ZF(0);
+	}
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
+	if (_Value < 0x8000 || _Value > 0x7FFF) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+		WriteReg(reg, (unsigned short)_Value);
+	}
 	WRITE_IP(SavedIP + 2);
 }
 
@@ -556,20 +664,54 @@ void CPU::op_cmp_reg() {
 		op_exit();
 		return;
 	}
-	//TODO
-	// FLAGS_SET
+	int _Value = (int)(short int)SwitchReg(first) - (short int)SwitchReg(second);
+	if (_Value == 0) {
+		WRITE_ZF(1);
+	}
+	else {
+		WRITE_ZF(0);
+	}
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
+	if (_Value < 0x8000 || _Value > 0x7FFF) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+	}
 	WRITE_IP(SavedIP + 3);
 }
 void CPU::op_cmp_immediate() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg = RAM->Read(SavedIP + 1);
-	//unsigned short integer = RAM->Read2Bytes(SavedIP + 2);
+	unsigned short integer = RAM->Read2Bytes(SavedIP + 2);
 	if (!IsReg(reg)) {
 		op_exit();
 		return;
 	}
-	//TODO
-	// FLAGS_SET
+	int _Value = (int)(short int)SwitchReg(reg) - integer;
+	if (_Value == 0) {
+		WRITE_ZF(1);
+	}
+	else {
+		WRITE_ZF(0);
+	}
+	if (_Value % 2 == 0) {
+		WRITE_PF(1);
+	}
+	else {
+		WRITE_PF(0);
+	}
+	if (_Value < 0x8000 || _Value > 0x7FFF) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+	}
 	WRITE_IP(SavedIP + 4);
 }
 void CPU::op_cmp_string() {
@@ -967,7 +1109,29 @@ void CPU::op_page() {
 	WRITE_IP(READ_IP + 1);
 }
 
-
+void CPU::op_try_connect() {
+	IoConnectToNewDevice();
+	BYTE error = IoIsPortOpened();
+	ProcData->Write(0x1B, error);
+	if (error == 0) {
+		WRITE_CF(1);
+	}
+	else {
+		WRITE_CF(0);
+	}
+}
+void CPU::op_close_connection() {
+	if (IoIsPortOpened() == 0) {
+		WRITE_CF(0);
+	}
+	else {
+		IoCloseConnection();
+		WRITE_CF(1);
+	}
+}
+void CPU::op_open_port() {
+	IoOpenPort();
+}
  
 void CPU::WriteToReg2(BYTE reg, unsigned short data) {
 	ProcData->Write2Bytes(GetRegAddr(reg), data);
@@ -982,29 +1146,37 @@ BYTE CPU::ReadFromReg(BYTE reg) {
 	return ProcData->Read(GetRegAddr(reg));
 }
 BYTE CPU::GetRegAddr(BYTE reg) {
-	if (!RegType(reg)) {
+	if (reg <= 0x11) {
 		return reg * 2;
 	}
 	else if (IsFlag(reg)){
 		return reg + 0x10;
 	}
 	else {
+		if ((reg & 0x50) == 0x50) {
+			return 0x17 + (reg ^ 0x50) * 2;
+		}
+		if ((reg & 0x40) == 0x40) {
+			return 0x14 + (reg ^ 0x40);
+		}
 		if ((reg & 0x30) == 0x30) {
 			return 0x12 + (reg ^ 0x30);
 		}
 		else {
-			return 0x12 + (reg ^ 0x20);
+			return 0x02 + (reg ^ 0x20);
 		}
 	}
 }
 bool CPU::RegType(BYTE reg) {
-	return (reg & 0x20) == 0x20 || IsFlag(reg);
+	return (reg >= 0x20 && reg <= 0x28) || (reg >= 0x30 && reg <= 0x31) || (reg >= 0x10 && reg <= 0x18) || reg==0x40;
 }
 bool CPU::IsReg(BYTE reg) {
 	return reg < 9 ||                // Registers
 		(reg >= 0x20 && reg <= 0x28) ||  // Low-Registers
 		(reg >= 0x10 && reg <= 0x18) ||  // Flags
-		(reg >= 0x30 && reg <= 0x33);    // Matrix & interrupt Registers
+		(reg >= 0x30 && reg <= 0x31) || 
+		(reg >= 0x40 && reg <= 0x41) ||
+		(reg >= 0x50 && reg <= 0x52);    // Matrix & interrupt Registers & ConnectToDevice registers
 }
 bool CPU::IsFlag(BYTE reg) {
 	return reg >= 10 && reg <= 18;

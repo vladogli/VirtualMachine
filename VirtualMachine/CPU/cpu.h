@@ -15,42 +15,42 @@ public: // Variables
 	memory *memMatrix;
 	BYTE **matrix;
 /*
-	********************************************************************************
-	**          First 64 bytes in RAM is a pointers to interrupt events           **
-	**  IR_VAL     NAME                     ADDR in memory                        **
-	**  0x00       KEYBOARD_INPUT_EVENT     0x00                                  **
-	**  0x01       NONE                     0x02                                  **
-	**  0x02       NONE                     0x04                                  **
-	**  0x03       NONE                     0x06                                  **
-	**  0x04       NONE                     0x08                                  **
-	**  0x05       NONE                     0x0A                                  **
-	**  0x06       NONE                     0x0C                                  **
-	**  0x07       NONE                     0x0E                                  **
-	**  0x08       NONE                     0x10                                  **
-	**  0x09       NONE                     0x12                                  **
-	**  0x0A       NONE                     0x14                                  **
-	**  0x0B       NONE                     0x16                                  **
-	**  0x0C       NONE                     0x18                                  **
-	**  0x0D       NONE                     0x1A                                  **
-	**  0x0E       NONE                     0x1C                                  **
-	**  0x0F       NONE                     0x1E                                  **
-	**  0x10       NONE                     0x20                                  **
-	**  0x11       NONE                     0x22                                  **
-	**  0x12       NONE                     0x24                                  **
-	**  0x13       NONE                     0x26                                  **
-	**  0x14       NONE                     0x28                                  **
-	**  0x15       NONE                     0x2A                                  **
-	**  0x16       NONE                     0x2C                                  **
-	**  0x17       NONE                     0x2E                                  **
-	**  0x18       NONE                     0x30                                  **
-	**  0x19       NONE                     0x32                                  **
-	**  0x1A       NONE                     0x34                                  **
-	**  0x1B       NONE                     0x36                                  **
-	**  0x1C       NONE                     0x38                                  **
-	**  0x1D       NONE                     0x3A                                  **
-	**  0x1E       NONE                     0x3C                                  **
-	**  0x1F       NONE                     0x3E                                  **
-	********************************************************************************
+	********************************************************************************************************
+	**                     First 64 bytes in RAM is a pointers to interrupt events                        **
+	**  IR_VAL     NAME                     ADDR in memory       Value in IV         Description          **
+	**  0x00       KEYBOARD_INPUT_EVENT     0x00                 Key Value           Processing a key     **
+	**  0x01       ACCEPT_CONNECTION        0x02                 Device ID            **
+	**  0x02       NONE                     0x04                                                          **
+	**  0x03       NONE                     0x06                                                          **
+	**  0x04       NONE                     0x08                                                          **
+	**  0x05       NONE                     0x0A                                                          **
+	**  0x06       NONE                     0x0C                                                          **
+	**  0x07       NONE                     0x0E                                                          **
+	**  0x08       NONE                     0x10                                                          **
+	**  0x09       NONE                     0x12                                                          **
+	**  0x0A       NONE                     0x14                                                          **
+	**  0x0B       NONE                     0x16                                                          **
+	**  0x0C       NONE                     0x18                                                          **
+	**  0x0D       NONE                     0x1A                                                          **
+	**  0x0E       NONE                     0x1C                                                          **
+	**  0x0F       NONE                     0x1E                                                          **
+	**  0x10       NONE                     0x20                                                          **
+	**  0x11       NONE                     0x22                                                          **
+	**  0x12       NONE                     0x24                                                          **
+	**  0x13       NONE                     0x26                                                          **
+	**  0x14       NONE                     0x28                                                          **
+	**  0x15       NONE                     0x2A                                                          **
+	**  0x16       NONE                     0x2C                                                          **
+	**  0x17       NONE                     0x2E                                                          **
+	**  0x18       NONE                     0x30                                                          **
+	**  0x19       NONE                     0x32                                                          **
+	**  0x1A       NONE                     0x34                                                          **
+	**  0x1B       NONE                     0x36                                                          **
+	**  0x1C       NONE                     0x38                                                          **
+	**  0x1D       NONE                     0x3A                                                          **
+	**  0x1E       NONE                     0x3C                                                          **
+	**  0x1F       NONE                     0x3E                                                          **
+	********************************************************************************************************
 */
 	//0x40  - 0xFF   - Num Stack
 	//0x100 - 0x1FF  - pointers to IN
@@ -87,14 +87,14 @@ private:
 
 	Interrupt registers
 	ASM(name)  Addr           Desc                   BYTE-CODE 
-	IR         0x14           Interrupt Register     0x32
-	IV         0x15-0x16      Interrupt value        0x33
+	IR         0x14           Interrupt Register     0x40
+	IV         0x15-0x16      Interrupt value        0x41
 
 	ConnectToDevice registers
 	ASM(name)  Addr           Desc                   BYTE-CODE 
-	CRH        0x17-0x18      Connect register high  0x34
-	CRL        0x19-0x20      Connect register low   0x35
-	
+	CRH        0x17-0x18      Connect register high  0x50
+	CHL        0x19-0x1A      Connect register low   0x51
+	CERR       0x1B-0x1C      Connect register low   0x52
 	
 	FLAGS
 	ASM(name)  Addr           Desc                   BYTE-CODE 
@@ -376,7 +376,7 @@ private: // functions
 
 
 
-	/* 0x80 - 0x8F */
+	/* 0x80 - 0x8F */ // Matrix opcodes
 
 	// BYTE-CODE            NAME                     HOW TO USE
 
@@ -431,12 +431,16 @@ private: // functions
 	// 0x88                 CLS                      CLS
 	void                    op_page();               // Clears the screen
 
-	/* 0x90 - 0x9F */
+	/* 0x90 - 0x9F */ // Connection opcodes
 
 	// Sets in Carry Flag true if connection was opened successfully. Sets false if something goes wrong.
-	// If Carry Flag is false, sets in Zero Flag error type.
-	// Sets to Zero Flag true  if destination address is wrong.
-	// Sets to Zero Flag false if destination address isn't opened or device doesnýt want to accept the connection.
+	// If Carry Flag is false, sets in CERR error type.
+	// 0 - Successfully connected.
+	// 1 - The current connection isn't closed.
+	// 2 - Device doesn't exist.
+	// 3 - The port on the device is closed.
+	// 4 - The device is already connected to another.
+	// 5 - Our device does not have the permission to connect to this.
 	// 0x90                 TRY_CONNECT               TRY_CONNECT
 	void                    op_try_connect();         // Tries to connect to device, which is addr saved in CR register
 	
@@ -447,6 +451,9 @@ private: // functions
 	// 0x92                 OPEN_PORT                 OPEN_PORT
 	void                    op_open_port();           // Open a port for new connections.
 
+	/* 0xA0 - 0xAF */ // Filesystem opcodes
+
+	// idk
 
 // Register interaction funcs
 
@@ -483,6 +490,9 @@ public:
 	void keyPressed(BYTE key);
 	void NextOp();
 	std::function<void(void)> IoConnectToNewDevice;
+	std::function<void(void)> IoOpenPort;
+	std::function<BYTE(void)> IoIsPortOpened;
+	std::function<void(void)> IoCloseConnection;
 public: // structors
 	CPU();
 };

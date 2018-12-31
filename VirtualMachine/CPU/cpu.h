@@ -3,11 +3,83 @@
 #include <string>
 #include <functional>
 #include <ctime>
+#include <boost/filesystem.hpp>
 #define ADDR unsigned short
 #define SIZE unsigned short
 #define BYTE unsigned char
 #define MATRIX_X_MAX_SIZE 150
 #define MATRIX_Y_MAX_SIZE 60
+#define READ(v)    ProcData->Read2Bytes(v)
+#define WRITE(x,v) ProcData->Write2Bytes(x, v)
+#define READ1(v) ProcData->Read(v)
+#define WRITE1(x,v) ProcData->Write(x, v)
+
+#define IP 0x00
+#define READ_IP     READ(IP)
+#define WRITE_IP(x) WRITE(IP, x)
+
+#define SP 0x10
+#define READ_SP     READ(SP)
+#define WRITE_SP(x) WRITE(SP,x)
+
+#define ZF 0x23
+#define READ_ZF     READ1(ZF)
+#define WRITE_ZF(x) WRITE1(ZF,x)
+
+#define SF 0x24
+#define READ_SF     READ1(SF)
+#define WRITE_SF(x) WRITE1(SF,x)
+
+#define CF 0x24
+#define READ_CF     READ1(CF)
+#define WRITE_CF(x) WRITE1(CF,x)
+
+
+#define PF 0x21
+#define READ_PF     READ1(PF)
+#define WRITE_PF(x) WRITE1(PF,x)
+
+#define OF 0x28
+#define READ_OF     READ1(OF)
+#define WRITE_OF(x) WRITE1(OF,x)
+
+#define IR 0x14
+#define READ_IR READ1(IR)
+#define WRITE_IR(x) WRITE1(IR, x)
+
+#define IV 0x15
+#define READ_IV READ(IV)
+#define WRITE_IV(x) WRITE(IV, x)
+
+#define IF 0x26
+#define READ_IF READ1(IF)
+#define WRITE_IF(x) WRITE1(IF, x)
+
+#define FERR 0x2D
+#define WRITE_FERR(x) WRITE(FERR,x)
+#define READ_FERR   READ(FERR)
+
+#define FS 0x2B
+#define WRITE_FS(x) WRITE1(FS,x)
+#define READ_FS   READ1(FS)
+
+#define MX 0x12
+#define WRITE_MX(x) WRITE1(MX,x)
+#define READ_MX    READ1(MX)
+
+#define MY 0x13
+#define WRITE_MY(x) WRITE1(MY,x)
+#define READ_MY    READ1(MY)
+
+#define IsReg2Bytes(x) (IsReg(x) && !RegType(x))
+
+#define SwitchReg(reg) ((RegType(reg)) ? (ReadFromReg(reg)) : ReadFromReg2(reg))
+#define WriteReg(reg, _Value) \
+if(RegType(reg)) { WriteToReg(reg, (unsigned char)_Value); } \
+else  { WriteToReg2(reg, (unsigned short)_Value); }
+
+
+#define DEBUG_MODE
 class CPU {
 public: // Variables 
 // Memory
@@ -19,7 +91,7 @@ public: // Variables
 	**                     First 64 bytes in RAM is a pointers to interrupt events                        **
 	**  IR_VAL     NAME                     ADDR in memory       Value in IV         Description          **
 	**  0x00       KEYBOARD_INPUT_EVENT     0x00                 Key Value           Processing a key     **
-	**  0x01       ACCEPT_CONNECTION        0x02                 Device ID            **
+	**  0x01       ACCEPT_CONNECTION        0x02                 Device ID                                **
 	**  0x02       NONE                     0x04                                                          **
 	**  0x03       NONE                     0x06                                                          **
 	**  0x04       NONE                     0x08                                                          **
@@ -55,7 +127,8 @@ public: // Variables
 	//0x40  - 0xFF   - Num Stack
 	//0x100 - 0x1FF  - pointers to IN
 	//0x200 - 0x2FF  - pointers to OUT
-	//0x300 - 0xFFFF - not reserved
+	//0x300 - 0x3FF  - File buffer
+	//0x400 - 0xFFFF - not reserved
 	Ram *RAM;
 	bool closed = 0;
 private: 
@@ -91,7 +164,7 @@ private:
 	IV         0x15-0x16      Interrupt value        0x41
 
 	ConnectToDevice registers
-	ASM(name)  Addr           Desc                   BYTE-CODE 
+	ASM(name)  Addr           Desc                   BYTE-CODE
 	CRH        0x17-0x18      Connect register high  0x50
 	CHL        0x19-0x1A      Connect register low   0x51
 	CERR       0x1B-0x1C      Connect register low   0x52
@@ -107,6 +180,13 @@ private:
 	IF         0x26           Interrupt Enable Flag  0x16
 	DF         0x27           Direction Flag         0x17
 	OF         0x28           Overflow  Flag         0x18
+
+	Filesystem registers
+	ASM(name)  Addr           Desc                   BYTE-CODE
+	FNA        0x29-0x2A      Filename addr          0x60
+	FS         0x2B           File size(in parts)    0x61
+	FERR       0x2D           Filesystem error       0x62
+
 	*/
 	memory *ProcData;
 	int unsleep_clock = 0;
@@ -452,8 +532,48 @@ private: // functions
 	void                    op_open_port();           // Open a port for new connections.
 
 	/* 0xA0 - 0xAF */ // Filesystem opcodes
+	// Filename addr has saved in FNA
 
-	// idk
+
+
+
+	// Places a file size in FS
+	// FERR:
+	// 0 - file exists
+	// 1 - file doesn't exists
+	// 2 - wrong filename (wrong chars)
+	// 0xA0                 GFI                       GFI
+	void                    op_getfileinfo();         // Places info about file in FERR and in FS
+
+	// FERR
+	// 0 - success
+	// 1 - wrong part
+	// 2 - wrong filename (wrong chars)
+	// 0xA1                 LOAD_PART                 LOAD_PART #REG
+	void                    op_load_part_reg();       // Loads a part of file in 0x300-0x3FF
+
+	// FERR
+	// 0 - success
+	// 1 - wrong part
+	// 2 - wrong filename (wrong chars)
+	// 0xA2                 LOAD_PART                 LOAD_PART $LL
+	void                    op_load_part();           // Loads a part of file in 0x300-0x3FF
+
+	// FERR
+	// 0 - success
+	// 1 - wrong part
+	// 2 - wrong filename (wrong chars)
+	// 0xA3                 SAVE_PART                 SAVE_PART $LL
+	void                    op_save_file_part();      // Saves a part of file from 0x300-0x3FF
+
+
+	// FERR
+	// 0 - success
+	// 1 - wrong part
+	// 2 - wrong filename (wrong chars)
+	// 0xA4                 SAVE_PART                 SAVE_PART #REG
+	void                    op_save_file_part_reg();  // Saves a part of file from 0x300-0x3FF
+
 
 // Register interaction funcs
 
@@ -497,8 +617,57 @@ public: // structors
 	CPU();
 };
 #include "cpu.cpp"
+
+#undef DEBUG_MODE
+#undef WriteReg
+#undef SwitchReg
+
 #undef ADDR
 #undef SIZE
 #undef BYTE
+
 #undef MATRIX_X_MAX_SIZE
 #undef MATRIX_Y_MAX_SIZE
+
+#undef IP
+#undef SP
+#undef ZF 
+#undef SF 
+#undef OF 
+#undef IR
+#undef IV
+#undef IF
+#undef FS
+#undef MY
+#undef MX
+#undef FERR
+
+#undef READ
+#undef READ_FS
+#undef READ_FERR
+#undef READ_IP  
+#undef READ_SP
+#undef READ_ZF   
+#undef READ_SF     
+#undef READ_OF  
+#undef READ_IR
+#undef READ_IV
+#undef READ_IF
+#undef READ_MX
+#undef READ_MY
+
+#undef WRITE
+#undef WRITE_FS
+#undef WRITE_FERR
+#undef WRITE_IR
+#undef WRITE_IV
+#undef WRITE_IF
+#undef WRITE_SF   
+#undef WRITE_OF  
+#undef WRITE_ZF
+#undef WRITE_SP 
+#undef WRITE_IP
+#undef WRITE_MX
+#undef WRITE_MY
+
+#undef IsReg2Bytes

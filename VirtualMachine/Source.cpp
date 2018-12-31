@@ -1,10 +1,10 @@
 
 
-#include "core.h"
+#include "VMService.h"
 #include <Windows.h>
 #include <iostream>
 #include <conio.h>
-#define CORE_TEST
+//#define CORE_TEST
 #ifdef CORE_TEST
 void gotoxy(short x, short y)
 {
@@ -54,6 +54,8 @@ int main(void)
 #else
 #define BYTE unsigned char
 #define ADDR unsigned short
+void ProcessLine(std::string line, std::vector<BYTE> &out) {
+}
 int main(int argc, char** argv) {
 	std::string inFilename;
 	std::string outFilename;
@@ -69,8 +71,10 @@ int main(int argc, char** argv) {
 	}
 	boost::filesystem::ifstream src(inFilename);
 	std::vector<BYTE> out;
-	// TODO 
-	// Compiler
+	std::string _Value;
+	while (getline(src, _Value)) {
+		ProcessLine(_Value, out);
+	}
 	boost::filesystem::ofstream output(inFilename, std::ios_base::binary);
 	for (size_t i = 0; i < out.size(); i++) {
 		output << out[i];

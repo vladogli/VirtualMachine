@@ -59,6 +59,10 @@
 #define WRITE_FERR(x) WRITE(FERR,x)
 #define READ_FERR   READ(FERR)
 
+#define ÑERR 0x1B
+#define WRITE_ÑERR(x) WRITE(ÑERR,x)
+#define READ_ÑERR   READ(ÑERR)
+
 #define FS 0x2B
 #define WRITE_FS(x) WRITE1(FS,x)
 #define READ_FS   READ1(FS)
@@ -71,6 +75,13 @@
 #define WRITE_MY(x) WRITE1(MY,x)
 #define READ_MY    READ1(MY)
 
+#define CRH 0x17 
+#define WRITE_CRH(x) WRITE(CRH,x)
+#define READ_CRH READ(CRH)
+
+#define CRL 0x19
+#define WRITE_CRL(x) WRITE(CRL,x)
+#define READ_CRL READ(CRL)
 #define IsReg2Bytes(x) (IsReg(x) && !RegType(x))
 
 #define SwitchReg(reg) ((RegType(reg)) ? (ReadFromReg(reg)) : ReadFromReg2(reg))
@@ -166,8 +177,8 @@ private:
 	ConnectToDevice registers
 	ASM(name)  Addr           Desc                   BYTE-CODE
 	CRH        0x17-0x18      Connect register high  0x50
-	CHL        0x19-0x1A      Connect register low   0x51
-	CERR       0x1B-0x1C      Connect register low   0x52
+	CRL        0x19-0x1A      Connect register low   0x51
+	CERR       0x1B-0x1C      Connection error buf   0x52
 	
 	FLAGS
 	ASM(name)  Addr           Desc                   BYTE-CODE 
@@ -519,8 +530,9 @@ private: // functions
 	// 1 - The current connection isn't closed.
 	// 2 - Device doesn't exist.
 	// 3 - The port on the device is closed.
-	// 4 - The device is already connected to another.
-	// 5 - Our device does not have the permission to connect to this.
+	// 4 - The port on our device is closed.
+	// 5 - The device is already connected to another.
+	// 6 - Our device does not have the permission to connect to this.
 	// 0x90                 TRY_CONNECT               TRY_CONNECT
 	void                    op_try_connect();         // Tries to connect to device, which is addr saved in CR register
 	
@@ -528,8 +540,21 @@ private: // functions
 	// 0x91                 CLOSE_CONNECT             CLOSE_CONNECT
 	void                    op_close_connection();    // Closes connection.
 
+	// Sets 0 to CERR if success
+	// Sets 1 to CERR if port already opened
 	// 0x92                 OPEN_PORT                 OPEN_PORT
 	void                    op_open_port();           // Open a port for new connections.
+
+	// Sets 0 to CERR if success
+	// Sets 1 to CERR if connections isn't closed
+	// 0x93                 CLOSE_PORT                CLOSE_PORT
+	void                    op_close_port();           // Closes a port.
+	
+	// Writes to CERR port state
+	// 0 - closed
+	// 1 - opened
+	// 0x94                 PORT_STATE                PORT_STATE
+	void                    op_port_get_state();           // Sets in CERR port state.
 
 	/* 0xA0 - 0xAF */ // Filesystem opcodes
 	// Filename addr has saved in FNA
@@ -609,10 +634,12 @@ private: // functions
 public: 
 	void keyPressed(BYTE key);
 	void NextOp();
-	std::function<void(void)> IoConnectToNewDevice;
-	std::function<void(void)> IoOpenPort;
-	std::function<BYTE(void)> IoIsPortOpened;
-	std::function<void(void)> IoCloseConnection;
+	std::function<BYTE(unsigned long long int)> IoConnectToNewDevice;
+	std::function<bool(unsigned long long int)> IoIsPortOpened;
+	std::function<void(unsigned long long int)> IoCloseConnection;
+	std::function<void(void)> OpenPort;
+	std::function<void(void)> ClosePort;
+	std::function<bool(void)> GetPortState;
 public: // structors
 	CPU();
 };
@@ -641,6 +668,8 @@ public: // structors
 #undef MY
 #undef MX
 #undef FERR
+#undef CRL
+#undef CRH
 
 #undef READ
 #undef READ_FS
@@ -655,6 +684,8 @@ public: // structors
 #undef READ_IF
 #undef READ_MX
 #undef READ_MY
+#undef READ_CRL
+#undef READ_CRH
 
 #undef WRITE
 #undef WRITE_FS
@@ -669,5 +700,7 @@ public: // structors
 #undef WRITE_IP
 #undef WRITE_MX
 #undef WRITE_MY
+#undef WRITE_CRH
+#undef WRITE_CRL
 
 #undef IsReg2Bytes

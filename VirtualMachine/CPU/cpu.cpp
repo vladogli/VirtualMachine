@@ -1069,8 +1069,8 @@ void CPU::op_page() {
 }
 
 void CPU::op_try_connect() {
-	IoConnectToNewDevice();
-	BYTE error = IoIsPortOpened();
+	unsigned long long int connectID = READ_CRH * 0x10000 + READ_CRL;
+	BYTE error = IoConnectToNewDevice(connectID);
 	ProcData->Write(0x1B, error);
 	if (error == 0) {
 		WRITE_CF(1);
@@ -1081,20 +1081,35 @@ void CPU::op_try_connect() {
 	WRITE_IP(READ_IP + 1);
 }
 void CPU::op_close_connection() {
-	if (IoIsPortOpened() == 0) {
-		WRITE_CF(0);
-	}
-	else {
-		IoCloseConnection();
-		WRITE_CF(1);
-	}
+	unsigned long long int connectID = READ_CRH * 0x10000 + READ_CRL;
+	WRITE_CF(IoIsPortOpened(connectID));
+	IoCloseConnection(connectID);
 	WRITE_IP(READ_IP + 1);
 }
 void CPU::op_open_port() {
-	IoOpenPort();
+	unsigned long long int connectID = READ_CRH * 0x10000 + READ_CRL;
+	if (IoIsPortOpened(connectID)) {
+		WRITE_ÑERR(1);
+		return;
+	}
+	WRITE_ÑERR(0);
+	OpenPort();
 	WRITE_IP(READ_IP + 1);
 }
-
+void CPU::op_close_port() {
+	unsigned long long int connectID = READ_CRH * 0x10000 + READ_CRL;
+	if (IoIsPortOpened(connectID)) {
+		WRITE_ÑERR(1);
+		return;
+	}
+	WRITE_ÑERR(0);
+	ClosePort();
+	WRITE_IP(READ_IP + 1);
+}
+void CPU::op_port_get_state() {
+	WRITE_ÑERR(GetPortState());
+	WRITE_IP(READ_IP + 1);
+}
 
 void CPU::op_getfileinfo() {
 	std::string _Value;
@@ -1111,7 +1126,7 @@ void CPU::op_getfileinfo() {
 		itr++;
 	}
 	if (boost::filesystem::exists(_Value)) {
-		WRITE_FS(1 + (boost::filesystem::file_size(_Value) / 0x100));
+		WRITE_FS(1 + (BYTE)(boost::filesystem::file_size(_Value) / 0x100));
 		WRITE_FERR(1);
 	}
 	else {

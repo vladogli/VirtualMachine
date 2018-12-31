@@ -52,6 +52,31 @@ int main(void)
 	return 0;
 }
 #else
-// TODO:
-// Compiler
+#define BYTE unsigned char
+#define ADDR unsigned short
+int main(int argc, char** argv) {
+	std::string inFilename;
+	std::string outFilename;
+	unsigned short offset;
+	if (argc > 4) {
+		inFilename = std::string(argv[1]);
+		outFilename = std::string(argv[2]);
+		offset = stoi(std::string(argv[3]));
+	}
+	if (!boost::filesystem::exists(inFilename)) {
+		std::cout << "ERROR. File doesn't exists.";
+		return 1;
+	}
+	boost::filesystem::ifstream src(inFilename);
+	std::vector<BYTE> out;
+	// TODO 
+	// Compiler
+	boost::filesystem::ofstream output(inFilename, std::ios_base::binary);
+	for (size_t i = 0; i < out.size(); i++) {
+		output << out[i];
+	}
+	output.close();
+}
+#undef BYTE
+#undef ADDR
 #endif

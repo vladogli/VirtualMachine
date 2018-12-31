@@ -1,10 +1,13 @@
 #include "core.h"
 
 
-VirtualMachine::VirtualMachine(unsigned long long unique_id1, std::function<void(void)>) : unique_id(unique_id1){
+VirtualMachine::VirtualMachine(unsigned long long unique_id1) : unique_id(unique_id1){
 	core = new CPU();
 	RAM = new Ram();
 	core->RAM = RAM;
+	core->OpenPort = std::bind(&VirtualMachine::Open, this);
+	core->ClosePort = std::bind(&VirtualMachine::Close, this);
+	core->GetPortState = std::bind(&VirtualMachine::IsOpened, this);
 	LoadFromDisket();
 }
 void VirtualMachine::PrivateUpdate() {
@@ -13,9 +16,18 @@ void VirtualMachine::PrivateUpdate() {
 void VirtualMachine::PrivateThread() {
 	while (!closed) {
 		PrivateUpdate();
-		//std::this_thread::sleep_for(std::chrono::milliseconds(Delay));
+		std::this_thread::sleep_for(std::chrono::milliseconds(Delay));
 	}
 	closed = 0;
+}
+bool VirtualMachine::IsOpened() {
+	return opened;
+}
+void VirtualMachine::Open() {
+	opened = 1;
+}
+void VirtualMachine::Close() {
+	opened = 0;
 }
 void VirtualMachine::Update() {
 	if (closed) {

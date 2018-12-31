@@ -4,7 +4,7 @@
 #include <Windows.h>
 #include <iostream>
 #include <conio.h>
-//#define CORE_TEST
+#define CORE_TEST
 #ifdef CORE_TEST
 void gotoxy(short x, short y)
 {
@@ -24,7 +24,7 @@ void func() {
 }
 int main(void)
 {
-	VirtualMachine VM(0xabcdef, std::function<void(void)>(func));
+	VirtualMachine VM(0xabcdef);
 	VM.OpenThread();
 	boost::thread thread(function, std::ref(VM));
 	auto matr = VM.GetMatrix();

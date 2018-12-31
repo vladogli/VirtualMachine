@@ -14,10 +14,48 @@ public: // Variables
 	//150 x 60 symbols
 	memory *memMatrix;
 	BYTE **matrix;
-	//0x0-0x40    - pointers to interrupt events
-	//0x100-0x1FF - pointers to IN
-	//0x200-0x2FF - pointers to OUT
-	//0x300-0xFFFF - not reserved
+/*
+	********************************************************************************
+	**          First 64 bytes in RAM is a pointers to interrupt events           **
+	**  IR_VAL     NAME                     ADDR in memory                        **
+	**  0x00       KEYBOARD_INPUT_EVENT     0x00                                  **
+	**  0x01       NONE                     0x02                                  **
+	**  0x02       NONE                     0x04                                  **
+	**  0x03       NONE                     0x06                                  **
+	**  0x04       NONE                     0x08                                  **
+	**  0x05       NONE                     0x0A                                  **
+	**  0x06       NONE                     0x0C                                  **
+	**  0x07       NONE                     0x0E                                  **
+	**  0x08       NONE                     0x10                                  **
+	**  0x09       NONE                     0x12                                  **
+	**  0x0A       NONE                     0x14                                  **
+	**  0x0B       NONE                     0x16                                  **
+	**  0x0C       NONE                     0x18                                  **
+	**  0x0D       NONE                     0x1A                                  **
+	**  0x0E       NONE                     0x1C                                  **
+	**  0x0F       NONE                     0x1E                                  **
+	**  0x10       NONE                     0x20                                  **
+	**  0x11       NONE                     0x22                                  **
+	**  0x12       NONE                     0x24                                  **
+	**  0x13       NONE                     0x26                                  **
+	**  0x14       NONE                     0x28                                  **
+	**  0x15       NONE                     0x2A                                  **
+	**  0x16       NONE                     0x2C                                  **
+	**  0x17       NONE                     0x2E                                  **
+	**  0x18       NONE                     0x30                                  **
+	**  0x19       NONE                     0x32                                  **
+	**  0x1A       NONE                     0x34                                  **
+	**  0x1B       NONE                     0x36                                  **
+	**  0x1C       NONE                     0x38                                  **
+	**  0x1D       NONE                     0x3A                                  **
+	**  0x1E       NONE                     0x3C                                  **
+	**  0x1F       NONE                     0x3E                                  **
+	********************************************************************************
+*/
+	//0x40  - 0xFF   - Num Stack
+	//0x100 - 0x1FF  - pointers to IN
+	//0x200 - 0x2FF  - pointers to OUT
+	//0x300 - 0xFFFF - not reserved
 	Ram *RAM;
 	bool closed = 0;
 private: 
@@ -46,44 +84,6 @@ private:
 	ASM(name)  Addr           Desc                   BYTE-CODE 
 	MX         0x12           Matrix      X Pointer  0x30
 	MY         0x13           Matrix      Y Pointer  0x31
-
-
-	********************************************************************************
-	**          First 32 bytes in RAM is a pointers to interrupt events           **
-	**  IR_VAL     NAME                     ADDR               VALUE              **
-	**  0x00       KEYBOARD_INPUT_EVENT     0x00               0x20               **
-	**  0x01       NONE                     0x02               0x                 **
-	**  0x02       NONE                     0x04               0x                 **
-	**  0x03       NONE                     0x06               0x                 **
-	**  0x04       NONE                     0x08               0x                 **
-	**  0x05       NONE                     0x0A               0x                 **
-	**  0x06       NONE                     0x0C               0x                 **
-	**  0x07       NONE                     0x0E               0x                 **
-	**  0x08       NONE                     0x10               0x                 **
-	**  0x09       NONE                     0x12               0x                 **
-	**  0x0A       NONE                     0x14               0x                 **
-	**  0x0B       NONE                     0x16               0x                 **
-	**  0x0C       NONE                     0x18               0x                 **
-	**  0x0D       NONE                     0x1A               0x                 **
-	**  0x0E       NONE                     0x1C               0x                 **
-	**  0x0F       NONE                     0x1E               0x                 **
-	**  0x10       NONE                     0x20               0x                 **
-	**  0x11       NONE                     0x22               0x                 **
-	**  0x12       NONE                     0x24               0x                 **
-	**  0x13       NONE                     0x26               0x                 **
-	**  0x14       NONE                     0x28               0x                 **
-	**  0x15       NONE                     0x2A               0x                 **
-	**  0x16       NONE                     0x2C               0x                 **
-	**  0x17       NONE                     0x2E               0x                 **
-	**  0x18       NONE                     0x30               0x                 **
-	**  0x19       NONE                     0x32               0x                 **
-	**  0x1A       NONE                     0x34               0x                 **
-	**  0x1B       NONE                     0x36               0x                 **
-	**  0x1C       NONE                     0x38               0x                 **
-	**  0x1D       NONE                     0x3A               0x                 **
-	**  0x1E       NONE                     0x3C               0x                 **
-	**  0x1F       NONE                     0x3E               0x                 **
-	********************************************************************************
 
 	Interrupt registers
 	ASM(name)  Addr           Desc                   BYTE-CODE 
@@ -432,7 +432,21 @@ private: // functions
 	void                    op_page();               // Clears the screen
 
 	/* 0x90 - 0x9F */
+
+	// Sets in Carry Flag true if connection was opened successfully. Sets false if something goes wrong.
+	// If Carry Flag is false, sets in Zero Flag error type.
+	// Sets to Zero Flag true  if destination address is wrong.
+	// Sets to Zero Flag false if destination address isn't opened or device doesnýt want to accept the connection.
+	// 0x90                 TRY_CONNECT               TRY_CONNECT
+	void                    op_try_connect();         // Tries to connect to device, which is addr saved in CR register
 	
+	// Sets in Carry flag true if connection was closed successfully. Or false, if there was no connection at all.
+	// 0x91                 CLOSE_CONNECT             CLOSE_CONNECT
+	void                    op_close_connection();    // Closes connection.
+
+	// 0x92                 OPEN_PORT                 OPEN_PORT
+	void                    op_open_port();           // Open a port for new connections.
+
 
 // Register interaction funcs
 

@@ -123,7 +123,7 @@ CPU::CPU() {
 
 void CPU::PushStack(unsigned short _Val) {
 	unsigned short SP_Val = READ_SP;
-	if (SP_Val >= 0x240) {
+	if (SP_Val >= 0xFF) {
 		throw STACK_OVERFLOW;
 	}
 	RAM->Write2Bytes(SP_Val, _Val);

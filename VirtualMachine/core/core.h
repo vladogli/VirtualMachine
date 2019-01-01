@@ -13,7 +13,7 @@ public:
 	CPU *core;
 	const unsigned long long unique_id;
 	std::wstring disketSaveFolder;
-	unsigned short int Delay = 25;
+	std::chrono::milliseconds Delay = std::chrono::milliseconds(1);
 private: // functions
 	void PrivateUpdate();
 	void PrivateThread();

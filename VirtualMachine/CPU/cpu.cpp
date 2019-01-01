@@ -86,7 +86,7 @@ void CPU::PushStack(unsigned short _Val) {
 }
 unsigned short CPU::PopStack() {
 	unsigned short SP_Val = READ_SP - 2;
-	if (SP_Val <= 0x40) {
+	if (SP_Val < 0x40) {
 		throw STACK_UNDERFLOW;
 	}
 	WRITE_SP(SP_Val);

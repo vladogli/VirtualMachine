@@ -16,7 +16,7 @@ void VirtualMachine::PrivateUpdate() {
 void VirtualMachine::PrivateThread() {
 	while (!closed) {
 		PrivateUpdate();
-		std::this_thread::sleep_for(std::chrono::milliseconds(Delay));
+		std::this_thread::sleep_for(Delay);
 	}
 	closed = 0;
 }

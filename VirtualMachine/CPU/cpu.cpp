@@ -11,8 +11,8 @@ CPU::CPU() {
 		matrix[i] = &memMatrix->mem[i * MATRIX_X_MAX_SIZE];
 	}
 	WRITE_IR(0xFF);
-	WRITE_IP(0x30);
-	WRITE_SP(40);
+	WRITE_IP(0x410);
+	WRITE_SP(0x40);
 #define init_op(x,y) functions[x] = new std::function<void(void)>(std::bind(&CPU::y, this));
 	init_op(0x0, op_exit);
 	init_op(0x1, op_int_tostring);
@@ -85,11 +85,11 @@ void CPU::PushStack(unsigned short _Val) {
 	WRITE_SP(SP_Val + 2);
 }
 unsigned short CPU::PopStack() {
-	unsigned short SP_Val = READ_SP;
-	if (SP_Val <= 40) {
+	unsigned short SP_Val = READ_SP - 2;
+	if (SP_Val <= 0x40) {
 		throw STACK_UNDERFLOW;
 	}
-	WRITE_SP(SP_Val - 2);
+	WRITE_SP(SP_Val);
 	return RAM->Read2Bytes(SP_Val);
 }
 void CPU::op_exit() {
@@ -127,11 +127,12 @@ void CPU::op_jump_to() {
 void CPU::op_jump_ift() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg = RAM->Read(SavedIP + 1);
-	if (!IsReg(reg) || !IsFlag(reg)) {
+	if (!IsReg(reg)) {
 		op_exit();
 		return;
 	}
 	if (!ReadFromReg(reg)) {
+		WRITE_IP(SavedIP + 4);
 		return;
 	}
 	ADDR addr = RAM->Read2Bytes(SavedIP + 2);
@@ -140,11 +141,12 @@ void CPU::op_jump_ift() {
 void CPU::op_jump_ifnt() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg = RAM->Read(SavedIP + 1);
-	if (!IsReg(reg) || !IsFlag(reg)) {
+	if (!IsReg(reg)) {
 		op_exit();
 		return;
 	}
 	if (ReadFromReg(reg)) {
+		WRITE_IP(SavedIP + 4);
 		return;
 	}
 	ADDR addr = RAM->Read2Bytes(SavedIP + 2);
@@ -154,11 +156,12 @@ void CPU::op_jump_or() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg1 = RAM->Read(SavedIP + 1);
 	BYTE reg2 = RAM->Read(SavedIP + 2);
-	if (!IsReg(reg1) || !IsFlag(reg1) || !IsReg(reg2) || !IsFlag(reg2)) {
+	if (!IsReg(reg1)|| !IsReg(reg2)) {
 		op_exit();
 		return;
 	}
 	if (!(ReadFromReg(reg1) || ReadFromReg(reg2))) {
+		WRITE_IP(SavedIP + 5);
 		return;
 	}
 	ADDR addr = RAM->Read2Bytes(SavedIP + 3);
@@ -168,11 +171,12 @@ void CPU::op_jump_nor() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg1 = RAM->Read(SavedIP + 1);
 	BYTE reg2 = RAM->Read(SavedIP + 2);
-	if (!IsReg(reg1) || !IsFlag(reg1) || !IsReg(reg2) || !IsFlag(reg2)) {
+	if (!IsReg(reg1) || !IsReg(reg2) ) {
 		op_exit();
 		return;
 	}
 	if ((ReadFromReg(reg1) || ReadFromReg(reg2))) {
+		WRITE_IP(SavedIP + 5);
 		return;
 	}
 	ADDR addr = RAM->Read2Bytes(SavedIP + 3);
@@ -182,11 +186,12 @@ void CPU::op_jump_xor() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg1 = RAM->Read(SavedIP + 1);
 	BYTE reg2 = RAM->Read(SavedIP + 2);
-	if (!IsReg(reg1) || !IsFlag(reg1) || !IsReg(reg2) || !IsFlag(reg2)) {
+	if (!IsReg(reg1) || !IsReg(reg2)) {
 		op_exit();
 		return;
 	}
 	if (!(ReadFromReg(reg1) ^ ReadFromReg(reg2))) {
+		WRITE_IP(SavedIP + 5);
 		return;
 	}
 	ADDR addr = RAM->Read2Bytes(SavedIP + 3);
@@ -196,11 +201,12 @@ void CPU::op_jump_nxor() {
 	unsigned short SavedIP = READ_IP;
 	BYTE reg1 = RAM->Read(SavedIP + 1);
 	BYTE reg2 = RAM->Read(SavedIP + 2);
-	if (!IsReg(reg1) || !IsFlag(reg1) || !IsReg(reg2) || !IsFlag(reg2)) {
+	if (!IsReg(reg1)|| !IsReg(reg2)) {
 		op_exit();
 		return;
 	}
 	if ((ReadFromReg(reg1) ^ ReadFromReg(reg2))) {
+		WRITE_IP(SavedIP + 5);
 		return;
 	}
 	ADDR addr = RAM->Read2Bytes(SavedIP + 3);
@@ -339,7 +345,7 @@ void CPU::op_add() {
 	else {
 		WRITE_PF(0);
 	}
-	if (_Value < 0x8000 || _Value > 0x7FFF) {
+	if (_Value < -0x8000 || _Value > 0x7FFF) {
 		WRITE_CF(1);
 	}
 	else {
@@ -369,7 +375,7 @@ void CPU::op_sub() {
 	else {
 		WRITE_PF(0);
 	}
-	if (_Value < 0x8000 || _Value > 0x7FFF) {
+	if (_Value < -0x8000 || _Value > 0x7FFF) {
 		WRITE_CF(1);
 	}
 	else {
@@ -399,7 +405,7 @@ void CPU::op_mul() {
 	else {
 		WRITE_PF(0);
 	}
-	if (_Value < 0x8000 || _Value > 0x7FFF) {
+	if (_Value <-0x8000 || _Value > 0x7FFF) {
 		WRITE_CF(1);
 	}
 	else {
@@ -429,7 +435,7 @@ void CPU::op_div() {
 	else {
 		WRITE_PF(0);
 	}
-	if (_Value < 0x8000 || _Value > 0x7FFF) {
+	if (_Value < -0x8000 || _Value > 0x7FFF) {
 		WRITE_CF(1);
 	}
 	else {
@@ -457,12 +463,12 @@ void CPU::op_inc() {
 	else {
 		WRITE_PF(0);
 	}
-	if (_Value < 0x8000 || _Value > 0x7FFF) {
+	if (_Value < -0x8000 || _Value > 0x7FFF) {
 		WRITE_CF(1);
 	}
 	else {
 		WRITE_CF(0);
-		WriteReg(reg, (unsigned short)_Value);
+		WriteReg(reg, _Value);
 	}
 	WRITE_IP(SavedIP + 2);
 }
@@ -486,12 +492,12 @@ void CPU::op_dec() {
 	else {
 		WRITE_PF(0);
 	}
-	if (_Value < 0x8000 || _Value > 0x7FFF) {
+	if (_Value < -0x8000 || _Value > 0x7FFF) {
 		WRITE_CF(1);
 	}
 	else {
 		WRITE_CF(0);
-		WriteReg(reg, (unsigned short)_Value);
+		WriteReg(reg, _Value);
 	}
 	WRITE_IP(SavedIP + 2);
 }
@@ -654,7 +660,7 @@ void CPU::op_cmp_immediate() {
 	else {
 		WRITE_PF(0);
 	}
-	if (_Value < 0x8000 || _Value > 0x7FFF) {
+	if (_Value < -0x8000 || _Value > 0x7FFF) {
 		WRITE_CF(1);
 	}
 	else {
@@ -873,7 +879,7 @@ void CPU::op_string_show() {
 	BYTE X = READ_MX;
 	BYTE Y = READ_MY;
 	if (X + _v.size() + 1 > MATRIX_X_MAX_SIZE) {
-		if (Y == MATRIX_Y_MAX_SIZE) {
+		if (Y + 1== MATRIX_Y_MAX_SIZE) {
 			op_scroll();
 			Y--;
 		}
@@ -883,7 +889,7 @@ void CPU::op_string_show() {
 		X = 0;
 	}
 	memcpy(&matrix[Y][X], _v.c_str(), _v.size());
-	WRITE_MX((unsigned char)_v.size() + 1);
+	WRITE_MX((unsigned char)_v.size());
 	WRITE_MY(Y);
 	WRITE_IP(SavedIP + 3);
 }
@@ -910,7 +916,7 @@ void CPU::op_string_show_reg() {
 	BYTE X = READ_MX;
 	BYTE Y = READ_MY;
 	if (X + _v.size() + 1 > MATRIX_X_MAX_SIZE) {
-		if (Y == MATRIX_Y_MAX_SIZE) {
+		if (Y + 1== MATRIX_Y_MAX_SIZE) {
 			op_scroll();
 			Y--;
 		}
@@ -920,7 +926,7 @@ void CPU::op_string_show_reg() {
 		X = 0;
 	}
 	memcpy(&matrix[Y][X], _v.c_str(), _v.size());
-	WRITE_MX((unsigned char)_v.size() + 1);
+	WRITE_MX((unsigned char)_v.size());
 	WRITE_MY(Y);
 	WRITE_IP(SavedIP + 1);
 }
@@ -940,7 +946,7 @@ void CPU::op_int_show() {
 		X = 0;
 	}
 	memcpy(&matrix[Y][X], _v.c_str(), _v.size());
-	WRITE_MX((unsigned char)_v.size() + 1);
+	WRITE_MX(X + (unsigned char)_v.size());
 	WRITE_MY(Y);
 	WRITE_IP(SavedIP + 3);
 
@@ -963,7 +969,7 @@ void CPU::op_int_show_reg() {
 	BYTE Y = READ_MY;
 	std::string _v = std::to_string(_Value);
 	if (X + _v.size() + 1> MATRIX_X_MAX_SIZE) {
-		if (Y == MATRIX_Y_MAX_SIZE) {
+		if (Y + 1 == MATRIX_Y_MAX_SIZE) {
 			op_scroll();
 			Y--;
 		}
@@ -976,7 +982,7 @@ void CPU::op_int_show_reg() {
 		X++;
 	}
 	memcpy(&matrix[Y][X], _v.c_str(), _v.size());
-	WRITE_MX((unsigned char)_v.size() + 1);
+	WRITE_MX(X + (unsigned char)_v.size() + 1);
 	WRITE_MY(Y);
 	WRITE_IP(SavedIP + 2);
 }
@@ -1311,7 +1317,7 @@ BYTE CPU::ReadFromReg(BYTE reg) {
 	return ProcData->Read(GetRegAddr(reg));
 }
 BYTE CPU::GetRegAddr(BYTE reg) {
-	if (reg <= 0x11) {
+	if (reg <= 0x8) {
 		return reg * 2;
 	}
 	else if (IsFlag(reg)){

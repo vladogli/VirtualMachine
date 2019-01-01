@@ -255,7 +255,7 @@ private: // functions
 	// OPERAND              EXPANSION               Desc
 	// JBE                  JOR CF, ZF, $LLHH       Jump if below or equal
 	// JNA                  JOR CF, ZF, $LLHH       Jump if not above
-	// 0x06                 JOR                     JOR  #FLAG, #FLAG, $LLHH
+	// 0x07                 JOR                     JOR  #FLAG, #FLAG, $LLHH
 	void                    op_jump_or();           // Jump to given addr if one of given flags is true
 
 	// OPERAND              EXPANSION               Desc
@@ -343,10 +343,10 @@ private: // functions
 	// 0x26                 DIV                     DIV #REG, #REG
 	void                    op_div();               // divide next 2 regs
 
-	// 0x27                 INC                     INC #REG, #REG
+	// 0x27                 INC                     INC #REG
 	void                    op_inc();               // increment next reg
 
-	// 0x28                 DEC                     DEC #REG, #REG
+	// 0x28                 DEC                     DEC #REG
 	void                    op_dec();               // decrement next reg
 
 

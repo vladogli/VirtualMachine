@@ -11,7 +11,7 @@ BYTE VMService::ConnectTwoDevices(u64 first, u64 second) {
 		}
 	}
 	bool _V2 = 0;
-	VirtualMachine *fptr, *sptr;
+	VirtualMachine *fptr = nullptr, *sptr = nullptr;
 	for (size_t i = 0; i < ptrs.size(); i++) {
 		if (ptrs[i]->unique_id == first) {
 			if (!ptrs[i]->IsOpened()) {
@@ -30,11 +30,15 @@ BYTE VMService::ConnectTwoDevices(u64 first, u64 second) {
 	if (!_V2) {
 		return 2;
 	}
-	delete[] fptr->core->RAM->IN;
-	fptr->core->RAM->IN = sptr->core->RAM->OUT;
-	delete[] sptr->core->RAM->IN;
-	sptr->core->RAM->IN = fptr->core->RAM->OUT;
-	connections.push_back(std::pair<u64, u64>(first, second));
+	if (fptr != nullptr && sptr != nullptr) {
+		delete[] fptr->core->RAM->IN;
+		fptr->core->RAM->IN = sptr->core->RAM->OUT;
+		delete[] sptr->core->RAM->IN;
+		sptr->core->RAM->IN = fptr->core->RAM->OUT;
+	}
+	else {
+		return 2;
+	}connections.push_back(std::pair<u64, u64>(first, second));
 	return 0;
 }
 void VMService::CloseConnection(u64 first, u64 second) {

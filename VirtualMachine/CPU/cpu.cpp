@@ -72,6 +72,18 @@ CPU::CPU() {
 	init_op(0x86, op_scroll);
 	init_op(0x87, op_nextline);
 	init_op(0x88, op_page);
+
+	init_op(0x90, op_try_connect);
+	init_op(0x91, op_close_connection);
+	init_op(0x92, op_open_port);
+	init_op(0x93, op_close_port);
+	init_op(0x94, op_port_get_state);
+
+	init_op(0xA0, op_getfileinfo);
+	init_op(0xA1, op_load_part_reg);
+	init_op(0xA2, op_load_part);
+	init_op(0xA3, op_save_file_part);
+	init_op(0xA4, op_save_file_part_reg);
 	 
 #undef init_op
 }

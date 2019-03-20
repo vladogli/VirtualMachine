@@ -1,4 +1,0 @@
-	mov if, 1
-	swchr iv
-	mov if, 0
-ret

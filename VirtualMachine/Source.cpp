@@ -1,11 +1,36 @@
-
-
-#include "VMService.h"
-#include <Windows.h>
+#define COMPILER
+#ifdef COMPILER
 #include <iostream>
+#include <string>
+#include "Compiler/Compiler.h"
+int main(int argc, char** argv) {
+	if (argc <= 2) {
+		::std::string filename, output_filename;
+		uint16_t offset;
+		::std::cin >> filename >> output_filename >> offset;
+		try {
+			compile(filename, output_filename, offset);
+		}
+		catch (std::string v) {
+			::std::cout << "Unknown token: " << v;
+		}
+	}
+	else {
+		try {
+			compile(argv[1], argv[2], ::std::stoi(argv[3]));
+		}
+		catch (std::string v) {
+			::std::cout << "Unknown token: " << v;
+		}
+	}
+	system("pause");
+}
+#else
+#include <iostream>
+#include <Windows.h>
+#include <string>
+#include "System/Device.h"
 #include <conio.h>
-#define CORE_TEST
-#ifdef CORE_TEST
 void gotoxy(short x, short y)
 {
 	COORD coord;
@@ -13,74 +38,35 @@ void gotoxy(short x, short y)
 	coord.Y = y;
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 }
-void function(VirtualMachine& VM) {
+void function(Monitor *m) {
 	while (1) {
-		VM.ReceiveKey((unsigned char)_getch());
+		m->ProcessKey(_getch());
 		std::this_thread::sleep_for(std::chrono::milliseconds(25));
 	}
 }
-void func() {
-
-}
-int main(void)
-{
-	VirtualMachine VM(0xabcdef);
-	VM.OpenThread();
-	boost::thread thread(function, std::ref(VM));
-	auto matr = VM.GetMatrix();
-	unsigned char** saved = new (unsigned char*[60]);
-	for (size_t j = 0; j < 60; j++) {
-		saved[j] = new unsigned char[150];
-		for (int i = 0; i < 150; i++) {
-			saved[j][i] = 0;
-		}
-	}
+void renderScreen(Monitor* monitor) {
+	auto matr = monitor->getPtrtoPtr();
+	unsigned char* saved = new unsigned char[4080];
+	memset(saved, 0, 4080);
+	memset((*matr), 0x20, 4080);
 	while (1) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(25));
-		for (short i = 0; i < 150; i++) {
-			for (short j = 0; j < 60; j++) {
-				if (matr[j][i] != saved[j][i])
-				{
-					saved[j][i] = matr[j][i];
-					gotoxy(i, j);
-					std::cout << matr[j][i];
-				}
+		for (short int i = 0; i < 4080; i++) {
+			if (saved[i] != (*matr)[i]) {
+				gotoxy(i % 80 , (i / 80));
+				::std::cout << (*matr)[i];
+				saved[i] = (*matr)[i];
 			}
 		}
 	}
-	std::this_thread::sleep_for(std::chrono::hours(60));
-	return 0;
 }
-#else
-#define BYTE unsigned char
-#define ADDR unsigned short
-void ProcessLine(std::string line, std::vector<BYTE> &out) {
+#include <fstream>
+int main(int argc, char ** argv) {
+	
+	SystemService ss;
+	uint16_t id = ss.CreateNewComputer();
+	::std::thread keys(function, (Monitor*)ss.GetPointerToComputer(id)->devices[1]), render(renderScreen, (Monitor*)ss.GetPointerToComputer(id)->devices[1]);
+	render.join();
+	keys.join();
 }
-int main(int argc, char** argv) {
-	std::string inFilename;
-	std::string outFilename;
-	unsigned short offset;
-	if (argc > 4) {
-		inFilename = std::string(argv[1]);
-		outFilename = std::string(argv[2]);
-		offset = stoi(std::string(argv[3]));
-	}
-	if (!boost::filesystem::exists(inFilename)) {
-		std::cout << "ERROR. File doesn't exists.";
-		return 1;
-	}
-	boost::filesystem::ifstream src(inFilename);
-	std::vector<BYTE> out;
-	std::string _Value;
-	while (getline(src, _Value)) {
-		ProcessLine(_Value, out);
-	}
-	boost::filesystem::ofstream output(inFilename, std::ios_base::binary);
-	for (size_t i = 0; i < out.size(); i++) {
-		output << out[i];
-	}
-	output.close();
-}
-#undef BYTE
-#undef ADDR
 #endif

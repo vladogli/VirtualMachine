@@ -15,15 +15,12 @@ typeOfDevice = 1;
 		}
 #define init_func(x,f) functions[x] = new \
 ::std::function<void(MemoryService *RAM, uint8_t *procMemory)>(f);
-		init_func(0, ret);
+		init_func(0, nop);
 		init_func(1, op_jump_if);
 		init_func(2, op_jump_ifnt);
-		init_func(3, nop);
+		init_func(3, ret);
 		init_func(4, push);
 		init_func(5, pop);
-		init_func(6, mov_reg_mem);
-		init_func(7, mov_mem_reg);
-		init_func(8, mov_reg_reg);
 		init_func(9, set_flag);
 		init_func(10,clc_flag);
 		init_func(11,jmp);
@@ -36,14 +33,21 @@ typeOfDevice = 1;
 		init_func(0x14, sub_reg);
 		init_func(0x15, mul_reg);
 		init_func(0x16, div_reg);
-		init_func(0x17, xor_flag);
-		init_func(0x18, or_flag);
-		init_func(0x19, and_flag);
+		init_func(0x17, mod_reg);
+		init_func(0x18, xor_flag);
+		init_func(0x19, or_flag);
+		init_func(0x1A, and_flag);
 
-		init_func(0x1A, inc_reg);
-		init_func(0x1B, dec_reg);
-		init_func(0x1C, not_reg);
-		init_func(0x1D, not_flag);
+		init_func(0x1B, inc_reg);
+		init_func(0x1C, dec_reg);
+		init_func(0x1D, not_reg);
+		init_func(0x1E, not_flag);
+		init_func(0x20, mov_reg_value);
+		init_func(0x21, mov_reg_reg);
+		init_func(0x22, mov_reg_MEM);
+		init_func(0x23, mov_MEM_REG);
+		init_func(0x24, mov_MEMreg_value);
+		init_func(0x25, mov_MEMreg_reg);
 #undef init_func
 	}
 }

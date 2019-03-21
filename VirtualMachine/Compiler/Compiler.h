@@ -18,7 +18,7 @@ void removeComments(::std::string& string) {
 		} else
 		if (string[i] == '\n'&& i + 1 < size) {
 			if (string[i + 1] == ' ' || string[i + 1] == '\n') {
-				string.erase(string.begin() + i + 1); i--;
+				string.erase(string.begin() + i + 1); size--; i--;
 			} 
 		} else
 		if (string[i] == ';') {
@@ -45,15 +45,22 @@ void findKeywords(::std::string& input, ::std::vector<keyword>& keywords) {
 			line += input[i];
 		}
 		else {
+			if (line.size() == 0) {
+				if (i >= size) {
+					break;
+				}
+				continue;
+			}
 			if (line[line.size() - 1] == ':') {
 				line.erase(line.begin() + line.size() - 1);
 				keywords.push_back({ line,line_number, 1 });
-				input.erase(input.begin() + (i - line.size() - 1), input.begin() + i);
-				i -= line.size() - 1;
+				input.erase(input.begin() + (i - line.size() - 1), input.begin() + i + 1);
+				i -= line.size() + 1;
+				size = input.size();
 			}
 			else line_number++;
 			line = "";
-			if (i < size) {
+			if (i >= size) {
 				break;
 			}
 		}
@@ -88,14 +95,20 @@ uint8_t isInt(std::string str) {
 		str.erase(str.begin() + str.size() - 1);
 	}
 	for (size_t i = 0; i < str.size(); i++) {
-		if (!((str[i] >= '0' && str[i] <= '9') || (str[i] >= 'A' && str[i]<='F'))) {
+		if (!((str[i] >= '0' && str[i] <= '9'))) {
+			if ((str[i] >= 'a' && str[i] <= 'f')) {
+				if (!returnValue) {
+					return 0;
+				}
+				else continue;
+			}
 			return 0;
 		}
 	}
 	return returnValue + 1;
 }
 #define toDec(x) \
-(((x) > '0' && (x) < '9') ? (x - '0') : ((x) - 'A'))
+(((x) >= '0' && (x) <= '9') ? (x - '0') : ((x) - 'a' + 10))
 uint16_t getIntFromHex(::std::string value) {
 	value.erase(value.begin() + value.size() - 1);
 	uint16_t returnValue = 0;
@@ -121,6 +134,7 @@ void compileLine(::std::string const& input, ::std::string& out, uint16_t& offse
 				out += int8_t(value % 0x100);
 				out += int8_t(value / 0x100);
 				if (i >= size) break;
+				word = "";
 				continue;
 			} else 
 			if (state == 2) {
@@ -129,6 +143,7 @@ void compileLine(::std::string const& input, ::std::string& out, uint16_t& offse
 				out += int8_t(value % 0x100);
 				out += int8_t(value / 0x100);
 				if (i >= size) break;
+				word = "";
 				continue;
 			}
 			auto itr = keywords.begin();
@@ -136,7 +151,7 @@ void compileLine(::std::string const& input, ::std::string& out, uint16_t& offse
 			if (itr == keywords.end()) throw word;
 			offset += 1 + ((*itr).bytecode >= 0x100);
 			out += int8_t((*itr).bytecode % 0x100);
-			if ((*itr).addr != 0) {
+			if ((*itr).addr ==  1) {
 				out += int8_t((*itr).bytecode / 0x100);
 			}
 			word = "";
@@ -154,8 +169,6 @@ void compileLine(::std::string const& input, ::std::string& out, uint16_t& offse
 			line += input[i];
 		}
 		else {
-			compileLine(line, out, offset, keywords);
-			line = "";
 			for (size_t i = 0, size = keywords.size(); i < size; i++) {
 				if (keywords[i].reference) {
 					if (keywords[i].bytecode == line_number) {
@@ -164,6 +177,8 @@ void compileLine(::std::string const& input, ::std::string& out, uint16_t& offse
 					}
 				}
 			}
+			compileLine(line, out, offset, keywords);
+			line = "";
 			line_number++;
 		}
 	} 
@@ -177,7 +192,7 @@ void Save(::std::string const& filename, ::std::string value) {
 void transformToUndercase(::std::string &str) {
 	for (size_t i = 0, size = str.size();i<size ; i++) {
 		if (str[i] >= 'A' && str[i] <= 'Z') {
-			str[i] =  str[i] - 'A';
+			str[i] = str[i] + 'a' - 'A';
 		}
 	}
 }

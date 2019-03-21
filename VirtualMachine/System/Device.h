@@ -66,7 +66,7 @@ public:
 /* in RAM
 * 0x00 - line number(0...50)
 * 0x01 - color (0xBF), B - background, F - foreground.
-* 0x02 - apply changes
+
 0 = Black  8 = Gray
 1 = Blue   9 = Light Blue
 2 = Green  A = Light green
@@ -75,6 +75,9 @@ public:
 5 = Lilac  D = Light purple
 6 = Yellow E = Light Yellow
 7 = White  F = Bright White
+
+* 0x02 - apply changes
+* 0x03 - x \ in 10-60
 * 0x10-0x60 - data
 */
 	void Work();

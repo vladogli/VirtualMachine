@@ -54,23 +54,6 @@ void pop(standartParams) {
 	WriteToRegister((*RAM).Read<uint8_t>(Value + 1),GetValueFromStack);
 	WriteToRegister(IP, Value + 2);
 }
-void mov_reg_mem(standartParams) {
-	uint16_t Value = ReadFromRegister(IP);
-	WriteToRegister(RAM->Read<uint8_t>(Value + 1), RAM->Read<uint16_t>(Value + 2));
-	WriteToRegister(IP, Value + 4);
-}
-void mov_mem_reg(standartParams) {
-	uint16_t Value = ReadFromRegister(IP);
-	RAM->Write(
-		RAM->Read<uint16_t>(Value + 1), 
-		ReadFromRegister(RAM->Read<uint8_t>(Value + 3)));
-	WriteToRegister(IP, Value + 4);
-}
-void mov_reg_reg(standartParams) {
-	uint16_t Value = ReadFromRegister(IP);
-	WriteToRegister(RAM->Read<uint8_t>(Value + 1), ReadFromRegister(RAM->Read<uint8_t>(Value + 2)));
-	WriteToRegister(IP, Value + 3);
-}
 void set_flag(standartParams) {
 	uint16_t Value = ReadFromRegister(IP);
 	WriteToRegister(RAM->Read<uint8_t>(Value + 1), true);
@@ -90,6 +73,11 @@ void call(standartParams) {
 	WriteValueToStack(ReadFromRegister(IP));
 	WriteToRegister(IP, RAM->Read<uint16_t>(Value + 1));
 	return;
+}
+void mov_reg_value(standartParams) {
+	uint16_t Value = ReadFromRegister(IP);
+	WriteToRegister(RAM->Read<uint8_t>(Value + 1), RAM->Read<uint16_t>(Value + 2));
+	WriteToRegister(IP, Value + 4);
 }
 void xor_reg(standartParams) {
 	uint16_t Value = ReadFromRegister(IP);
@@ -196,6 +184,23 @@ void div_reg(standartParams) {
 	WriteToRegister(IP, Value + 3);
 }
 
+void mod_reg(standartParams) {
+	uint16_t Value = ReadFromRegister(IP);
+	uint8_t reg = RAM->Read<uint8_t>(Value + 1);
+	int32_t result =
+		int32_t(int16_t(ReadFromRegister(reg))) %
+		int16_t(ReadFromRegister(RAM->Read<uint8_t>(Value + 2)));
+	WriteToRegister(reg, uint16_t(result));
+
+	WriteToRegister(PF, result % 2);
+	WriteToRegister(ZF, result == 0);
+	WriteToRegister(OF, result > 32767);
+	WriteToRegister(CF, result < 32768);
+	WriteToRegister(SF, result < 0);
+
+	WriteToRegister(IP, Value + 3);
+}
+
 void xor_flag(standartParams) {
 	uint16_t Value = ReadFromRegister(IP);
 	uint8_t reg = RAM->Read<uint8_t>(Value + 1);
@@ -272,4 +277,26 @@ void not_flag(standartParams) {
 		!int32_t(int16_t(ReadFromRegister(reg)));
 	WriteToRegister(reg, uint16_t(result));
 	WriteToRegister(IP, Value + 2);
+}
+
+void mov_reg_value(standartParams) {
+	uint16_t Value = ReadFromRegister(IP);
+	WriteToRegister(RAM->Read<uint8_t>(Value + 1), 
+		RAM->Read<uint16_t>(Value + 2));
+	WriteToRegister(IP, Value + 4);
+}
+void mov_reg_reg(standartParams) {
+	uint16_t Value = ReadFromRegister(IP);
+	WriteToRegister(RAM->Read<uint8_t>(Value + 1), ReadFromRegister(RAM->Read<uint8_t>(Value + 2)));
+	WriteToRegister(IP, Value + 3);
+}
+void mov_MEMreg_value(standartParams) {
+	uint16_t Value = ReadFromRegister(IP);
+	RAM->Write(ReadFromRegister(RAM->Read<uint8_t>(Value + 1)), RAM->Read<uint16_t>(Value + 2));
+	WriteToRegister(IP, Value + 4);
+}
+void mov_MEMreg_reg(standartParams) {
+	uint16_t Value = ReadFromRegister(IP);
+	RAM->Write(ReadFromRegister(RAM->Read<uint8_t>(Value + 1)), ReadFromRegister(RAM->Read<uint16_t>(Value + 2)));
+	WriteToRegister(IP, Value + 3);
 }

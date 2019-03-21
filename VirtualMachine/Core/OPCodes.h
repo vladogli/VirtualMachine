@@ -81,16 +81,17 @@ void WriteValueToStack(uint16_t value, standartParams) {
 #define WriteValueToStack(val) WriteValueToStack(val,RAM,procMemory)
 // 0x00-0x0F
 // idk
- /* Mnemonic           opcode    NumOfBytes
-*  ret(urn)           0x00      0x01
+/* Mnemonic           opcode    NumOfBytes
+*  nop                0x00      0x01
 *
 *  Description:
-*  Gets value from stack and going to this address
+*  No operation
 *
 *  Example:
-*  ret
+*  nop
 */
-void ret(standartParams);
+void nop(standartParams);
+
 /* Mnemonic           opcode    NumOfBytes
 *  jif $flag, #LLHH   0x01      0x04
 *
@@ -114,15 +115,15 @@ void op_jump_if(standartParams);
 void op_jump_ifnt(standartParams);
 
 /* Mnemonic           opcode    NumOfBytes
-*  nop                0x03      0x01
+*  ret(urn)           0x03      0x01
 *
 *  Description:
-*  No operation
+*  Gets value from stack and going to this address
 *
 *  Example:
-*  nop
+*  ret
 */
-void nop(standartParams);
+void ret(standartParams);
 
 /* Mnemonic           opcode    NumOfBytes
 *  push $reg          0x04      0x02
@@ -145,40 +146,6 @@ void push(standartParams);
 *  pop ax
 */
 void pop(standartParams);
-
-/* Mnemonic           opcode    NumOfBytes
-*  mov $reg, #LLHH    0x06      0x04
-*
-*  Description:
-*  Move memory value to register
-*
-*  Example:
-*  mov ax, 1234h
-*/
-void mov_reg_mem(standartParams);
-
-/* Mnemonic           opcode    NumOfBytes
-*  mov #LLHH, $reg    0x07      0x04
-*
-*  Description:
-*  Move register value to address
-*
-*  Example:
-*  mov 1234h, ax
-*/
-void mov_mem_reg(standartParams);
-
-/* Mnemonic           opcode    NumOfBytes
-*  mov $reg, $reg     0x08      0x03
-*
-*  Description:
-*  Move second register value to first
-*
-*  Example:
-*  mov ax, bx 
-*  from bx to ax
-*/
-void mov_reg_reg(standartParams);
 
 /* Mnemonic           opcode    NumOfBytes
 *  set $REG           0x09      0x02
@@ -226,8 +193,13 @@ void call(standartParams);
 
 
 
+
+
 // 0x10-0x1F
 // Math instructions
+
+
+
 
 /* 
   Register instructions.
@@ -287,6 +259,13 @@ void mul_reg(standartParams);
 void div_reg(standartParams);
 
 /*
+* Name        opcode
+* div         0x17
+* Description: get module.
+*/
+void mod_reg(standartParams);
+
+/*
   Flag instructions.
   Every logic opcode takes 3 bytes. Name will be in description.
   Every operation places result in first flag.
@@ -296,21 +275,21 @@ void div_reg(standartParams);
 
 /*
 * Name        opcode
-* xor         0x17
+* xor         0x18
 * Description: XOR.
 */
 void xor_flag(standartParams);
 
 /*
 * Name        opcode
-* or          0x18
+* or          0x19
 * Description: OR.
 */
 void or_flag(standartParams);
 
 /*
 * Name        opcode
-* and         0x19
+* and         0x1A
 * Description: AND.
 */
 void and_flag(standartParams);
@@ -322,7 +301,7 @@ void and_flag(standartParams);
 
 /*
 * Name         opcode
-* inc $reg     0x1A
+* inc $reg     0x1B
 * Description: increment register.
 * 
 */
@@ -330,7 +309,7 @@ void inc_reg(standartParams);
 
 /*
 * Name         opcode
-* dec $reg     0x1B
+* dec $reg     0x1C
 * Description: decrement register.
 * 
 */
@@ -338,18 +317,100 @@ void dec_reg(standartParams);
 
 /*
 * Name        opcode
-* and         0x1C
+* and         0x1D
 * Description: NOT register.
 */
 void not_reg(standartParams);
 
 /*
 * Name        opcode
-* and         0x1D
+* and         0x1E
 * Description: NOT flag.
 */
 void not_flag(standartParams);
 
+
+
+
+
+// 0x20-0x2F
+// Mov instructions
+
+
+
+
+/* Mnemonic           opcode    NumOfBytes
+*  movrv $reg, #LLHH    0x20      0x04
+*
+*  Description:
+*  move to register value
+*
+*  Example:
+*  movrv ax, 1234h
+*/
+void mov_reg_value(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  movrr $reg, $reg    0x21      0x03
+*
+*  Description:
+*  Move register value to register
+*
+*  Example:
+*  movrr ax, bx
+*/
+void mov_reg_reg(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  movrm $reg, #addr  0x22      0x03
+*
+*  Description:
+*  Move to register addr value
+*
+*  Example:
+*  movrm ax, 1234h
+*/
+void mov_reg_MEM(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  movrm #addr, $reg  0x22      0x03
+*
+*  Description:
+*  Move to addr reg value
+*
+*  Example:
+*  movrm 1234h, ax
+*/
+void mov_MEM_reg(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  movmrv $reg, #LLHH 0x24      0x04
+*
+*  Description:
+*  move to address, which writed in register value the value
+*
+*  Example:
+*  ax = 10
+*  ...
+*  movmrv ax, 1000h
+*  write to #10 1000h
+*/
+void mov_MEMreg_value(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  movmrr $reg, $reg  0x25      0x03
+*
+*  Description:
+*  move to address, which writed in register value the value, which writed in register
+*
+*  Example:
+*  ax = 10
+*  bx = 20
+*  ...
+*  movmrr ax, bx
+*  write to #10 20
+*/
+void mov_MEMreg_reg(standartParams);
 
 #include "OPCodes.cpp"
 

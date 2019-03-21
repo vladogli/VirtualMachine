@@ -1,0 +1,39 @@
+main_loop:
+nop
+jump main_loop
+
+nextLine:
+set IF
+push ax
+movrm ax, A0h
+inc ax
+mod ax, 50
+movmr A0h, ax
+pop ax
+clc IF
+ret
+
+show_key:
+push ax
+push bx
+push cx
+sub sp, 6
+movrm ax, A4h
+mul ax, 80
+movrm bx, A3h
+add ax, bx
+pop cx
+movmrr ax, cx
+add sp, 8
+pop cx
+pop bx
+pop ax
+sub sp, 2
+ret
+
+process_key;
+set if
+push iv
+call show_key
+clc if
+ret

@@ -14,6 +14,7 @@ int main(int argc, char** argv) {
 		catch (std::string v) {
 			::std::cout << "Unknown token: " << v;
 		}
+		system("pause");
 	}
 	else {
 		try {
@@ -23,7 +24,6 @@ int main(int argc, char** argv) {
 			::std::cout << "Unknown token: " << v;
 		}
 	}
-	system("pause");
 }
 #else
 #include <iostream>

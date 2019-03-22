@@ -1,14 +1,39 @@
 #pragma once
 #include "MemoryService.h"
 // Set 1-byte value to the register
-void setRegValue(uint8_t *procMemory, uint8_t reg, uint8_t value);
+inline void setRegValue(uint8_t *procMemory, uint8_t reg, uint8_t value);
 // Set 2-byte value to the register
-void setReg2Value(uint8_t *procMemory, uint8_t reg, uint16_t value);
+inline void setReg2Value(uint8_t *procMemory, uint8_t reg, uint16_t value);
 // Set 1-byte value to the register
-uint8_t getRegValue(uint8_t *procMemory, uint8_t reg);
+inline uint8_t getRegValue(uint8_t *procMemory, uint8_t reg);
 // Set 2-byte value to the register
-uint16_t getReg2Value(uint8_t *procMemory, uint8_t reg);
-
+inline uint16_t getReg2Value(uint8_t *procMemory, uint8_t reg);
+// Just alias to functions higher
+inline uint16_t ReadFromRegister(uint8_t *procMemory, uint8_t reg);
+// Just alias to functions higher
+inline uint16_t ReadFromRegister(uint8_t *procMemory, uint8_t reg) {
+	if (reg < 0x0B) {
+		return getReg2Value(procMemory, reg);
+	}
+	else if (reg < 0x19) {
+		return bool(getRegValue(procMemory, reg));
+	}
+	else if (reg < 0x28) {
+		return getRegValue(procMemory, reg);
+	}
+	return 0;
+}
+inline void WriteToRegister(uint8_t *procMemory, uint8_t reg, uint16_t value) {
+	if (reg < 0x0B) {
+		setReg2Value(procMemory, reg, value);
+	}
+	else if (reg < 0x19) {
+		setRegValue(procMemory, reg, bool(value));
+	}
+	else if (reg < 0x28) {
+		setReg2Value(procMemory, reg, uint8_t(value));
+	}
+}
 #define IP uint8_t(0x00)
 #define AX uint8_t(0x01)
 #define BX uint8_t(0x02)
@@ -40,29 +65,6 @@ uint16_t getReg2Value(uint8_t *procMemory, uint8_t reg);
 #define DL uint8_t(0x26)
 #define DH uint8_t(0x27)
 
-uint16_t ReadFromRegister(uint8_t *procMemory, uint8_t reg) {
-	if (reg < 0x0B) {
-		return getReg2Value(procMemory, reg);
-	}
-	else if(reg<0x19) {
-		return bool(getRegValue(procMemory, reg));
-	}
-	else if (reg < 0x28) {
-		return getRegValue(procMemory, reg);
-	}
-	return 0;
-}
-void WriteToRegister(uint8_t *procMemory, uint8_t reg, uint16_t value) {
-	if (reg < 0x0B) {
-		setReg2Value(procMemory, reg, value);
-	}
-	else if (reg < 0x19) {
-		setRegValue(procMemory, reg, bool(value));
-	}
-	else if (reg < 0x28) {
-		setReg2Value(procMemory, reg, uint8_t(value));
-	}
-}
 #define ReadFromRegister(x) ReadFromRegister(procMemory, x)
 #define WriteToRegister(x,y) WriteToRegister(procMemory, x, y)
 #define standartParams  MemoryService *RAM, uint8_t *procMemory
@@ -115,62 +117,7 @@ void op_jump_if(standartParams);
 void op_jump_ifnt(standartParams);
 
 /* Mnemonic           opcode    NumOfBytes
-*  ret(urn)           0x03      0x01
-*
-*  Description:
-*  Gets value from stack and going to this address
-*
-*  Example:
-*  ret
-*/
-void ret(standartParams);
-
-/* Mnemonic           opcode    NumOfBytes
-*  push $reg          0x04      0x02
-*
-*  Description:
-*  Push value from reg to stack
-*
-*  Example:
-*  push ax
-*/
-void push(standartParams);
-
-/* Mnemonic           opcode    NumOfBytes
-*  pop $reg           0x05      0x02
-*
-*  Description:
-*  Pop value from stack to reg
-*
-*  Example:
-*  pop ax
-*/
-void pop(standartParams);
-
-/* Mnemonic           opcode    NumOfBytes
-*  set $REG           0x09      0x02
-*
-*  Description:
-*  Sets to flag true value
-*
-*  Example:
-*  set ZF
-*/
-void set_flag(standartParams);
-
-/* Mnemonic           opcode    NumOfBytes
-*  clc $REG           0x0A      0x02
-*
-*  Description:
-*  Sets to flag false value
-*
-*  Example:
-*  clc ZF
-*/
-void clc_flag(standartParams);
-
-/* Mnemonic           opcode    NumOfBytes
-*  jmp #addr          0x0B      0x03
+*  jmp #addr          0x03      0x03
 *
 *  Description:
 *  jump to addr
@@ -181,7 +128,7 @@ void clc_flag(standartParams);
 void jmp(standartParams);
 
 /* Mnemonic           opcode    NumOfBytes
-*  call #addr         0x0C      0x03
+*  call #addr         0x04      0x03
 *
 *  Description:
 *  push to stack now ip and jump to addr
@@ -190,6 +137,61 @@ void jmp(standartParams);
 *  call 1234h
 */
 void call(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  ret(urn)           0x05      0x01
+*
+*  Description:
+*  Gets value from stack and going to this address
+*
+*  Example:
+*  ret
+*/
+void ret(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  push $reg          0x06      0x02
+*
+*  Description:
+*  Push value from reg to stack
+*
+*  Example:
+*  push ax
+*/
+void push(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  pop $reg           0x07      0x02
+*
+*  Description:
+*  Pop value from stack to reg
+*
+*  Example:
+*  pop ax
+*/
+void pop(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  set $REG           0x08      0x02
+*
+*  Description:
+*  Sets to flag true value
+*
+*  Example:
+*  set ZF
+*/
+void set_flag(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  clc $REG           0x09      0x02
+*
+*  Description:
+*  Sets to flag false value
+*
+*  Example:
+*  clc ZF
+*/
+void clc_flag(standartParams);
 
 
 
@@ -214,56 +216,98 @@ void call(standartParams);
 * xor         0x10
 * Description: XOR.
 */
-void xor_reg(standartParams);
+void xor_reg_reg(standartParams);
 
 /*
 * Name        opcode
 * or          0x11
 * Description: OR.
 */
-void or_reg(standartParams);
+void or_reg_reg(standartParams);
 
 /*
 * Name        opcode
 * and         0x12
 * Description: AND.
 */
-void and_reg(standartParams);
+void and_reg_reg(standartParams);
 
 /*
 * Name        opcode
 * add         0x13
 * Description: ADD.
 */
-void add_reg(standartParams);
+void add_reg_reg(standartParams);
 
 /*
 * Name        opcode
 * sub         0x14
 * Description: subtract.
 */
-void sub_reg(standartParams);
+void sub_reg_reg(standartParams);
 
 /*
 * Name        opcode
-* mul         0x15
+* cmp         0x15
+* Description: compare.
+*/
+void cmp_reg_reg(standartParams);
+
+/*
+* Name        opcode
+* mul         0x16
 * Description: multiply.
 */
-void mul_reg(standartParams);
-
-/*
-* Name        opcode
-* div         0x16
-* Description: divide.
-*/
-void div_reg(standartParams);
+void mul_reg_reg(standartParams);
 
 /*
 * Name        opcode
 * div         0x17
+* Description: divide.
+*/
+void div_reg_reg(standartParams);
+
+/*
+* Name        opcode
+* div         0x18
 * Description: get module.
 */
-void mod_reg(standartParams);
+void mod_reg_reg(standartParams);
+
+/*
+* Other.
+* using 2 bytes.
+*/
+
+/*
+* Name         opcode
+* inc $reg     0x19
+* Description: increment register.
+*
+*/
+void inc_reg(standartParams);
+
+/*
+* Name         opcode
+* dec $reg     0x1A
+* Description: decrement register.
+*
+*/
+void dec_reg(standartParams);
+
+/*
+* Name        opcode
+* not         0x1B
+* Description: NOT register.
+*/
+void not_reg(standartParams);
+
+/*
+* Name        opcode
+* not         0x1C
+* Description: NOT flag.
+*/
+void not_flag(standartParams);
 
 /*
   Flag instructions.
@@ -275,68 +319,144 @@ void mod_reg(standartParams);
 
 /*
 * Name        opcode
-* xor         0x18
+* xor         0x1C
 * Description: XOR.
 */
-void xor_flag(standartParams);
+void xor_flag_flag(standartParams);
 
 /*
 * Name        opcode
-* or          0x19
+* or          0x1D
 * Description: OR.
 */
-void or_flag(standartParams);
+void or_flag_flag(standartParams);
 
 /*
 * Name        opcode
-* and         0x1A
+* and         0x1E
 * Description: AND.
 */
-void and_flag(standartParams);
+void and_flag_flag(standartParams);
 
 /*
 * Other.
 * using 2 bytes.
 */
 
-/*
-* Name         opcode
-* inc $reg     0x1B
-* Description: increment register.
-* 
-*/
-void inc_reg(standartParams);
-
-/*
-* Name         opcode
-* dec $reg     0x1C
-* Description: decrement register.
-* 
-*/
-void dec_reg(standartParams);
-
-/*
-* Name        opcode
-* and         0x1D
-* Description: NOT register.
-*/
-void not_reg(standartParams);
-
-/*
-* Name        opcode
-* and         0x1E
-* Description: NOT flag.
-*/
-void not_flag(standartParams);
-
-
-
-
 
 // 0x20-0x2F
+// Math instructions (reg, value)
+
+
+/*
+  Register instructions.
+  Every opcode takes 3 bytes. Name will be in description.
+  Every operation places result in first register.
+  Mnemonic:
+  %Name% $reg, $reg
+*/
+
+/*
+* Name        opcode
+* xor         0x20
+* Description: XOR.
+*/
+void xor_reg_value(standartParams);
+
+/*
+* Name        opcode
+* or          0x21
+* Description: OR.
+*/
+void or_reg_value(standartParams);
+
+/*
+* Name        opcode
+* and         0x22
+* Description: AND.
+*/
+void and_reg_value(standartParams);
+
+/*
+* Name        opcode
+* add         0x23
+* Description: ADD.
+*/
+void add_reg_value(standartParams);
+
+/*
+* Name        opcode
+* sub         0x24
+* Description: subtract.
+*/
+void sub_reg_value(standartParams);
+
+/*
+* Name        opcode
+* cmp         0x25
+* Description: compare.
+*/
+void cmp_reg_value(standartParams);
+
+/*
+* Name        opcode
+* mul         0x26
+* Description: multiply.
+*/
+void mul_reg_value(standartParams);
+
+/*
+* Name        opcode
+* div         0x27
+* Description: divide.
+*/
+void div_reg_value(standartParams);
+
+/*
+* Name        opcode
+* div         0x28
+* Description: get module.
+*/
+void mod_reg_value(standartParams);
+
+
+/*
+  Flag instructions.
+  Every logic opcode takes 3 bytes. Name will be in description.
+  Every operation places result in first flag.
+  Mnemonic:
+  %Name% $flag, $flag
+*/
+
+/*
+* Name        opcode
+* xor         0x29
+* Description: XOR.
+*/
+void xor_flag_value(standartParams);
+
+/*
+* Name        opcode
+* or          0x2A
+* Description: OR.
+*/
+void or_flag_value(standartParams);
+
+/*
+* Name        opcode
+* and         0x2B
+* Description: AND.
+*/
+void and_flag_value(standartParams);
+
+/*
+* Other.
+* using 2 bytes.
+*/
+
+
+// 0x30-0x3F
 // Mov instructions
-
-
 
 
 /* Mnemonic           opcode    NumOfBytes
@@ -373,7 +493,7 @@ void mov_reg_reg(standartParams);
 void mov_reg_MEM(standartParams);
 
 /* Mnemonic           opcode    NumOfBytes
-*  movrm #addr, $reg  0x22      0x03
+*  movrm #addr, $reg  0x23      0x03
 *
 *  Description:
 *  Move to addr reg value
@@ -411,6 +531,21 @@ void mov_MEMreg_value(standartParams);
 *  write to #10 20
 */
 void mov_MEMreg_reg(standartParams);
+
+/* Mnemonic           opcode    NumOfBytes
+*  movmrr $reg, $reg  0x25      0x03
+*
+*  Description:
+*  move to address, which writed in register value the value, which writed in register
+*
+*  Example:
+*  ax = 10
+*  bx = 20
+*  ...
+*  movmrr ax, bx
+*  write to #10 20
+*/
+void mov_MEM_value(standartParams);
 
 #include "OPCodes.cpp"
 

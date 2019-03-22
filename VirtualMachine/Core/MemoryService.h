@@ -13,6 +13,7 @@
 #include <iomanip>
 #endif
 #include <mutex>
+//Just memory class :/
 class MemoryService {
 public:
 	uint8_t* memory;
@@ -24,16 +25,20 @@ public:
 #ifdef MEMORY_DEBUG
 	void DUMP();
 #endif
+	// Read sizeof(T) bytes
 	template<typename T>
 	T Read(uint16_t addr);
+	// Write sizeof(T) bytes
 	template<typename T>
 	void Write(uint16_t addr, T value);
 
+	// Initialize a memService.
 	MemoryService(uint16_t size) : size(size) {
 		memory = new uint8_t[size];
 		memset(memory, 0, size);
 	}
-
+	
+	// Destruct a memService.
 	~MemoryService() {
 		delete[] memory;
 	}

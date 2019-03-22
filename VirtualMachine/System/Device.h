@@ -77,7 +77,7 @@ public:
 7 = White  F = Bright White
 
 * 0x02 - apply changes
-* 0x03 - x \ in 10-60
+* 0x03 - x
 * 0x10-0x60 - data
 */
 	void Work();
@@ -87,10 +87,10 @@ public:
 	Monitor();
 	~Monitor();
 };
-// 0x100-0x190
+// 0x100-0x18F
 // 0x100-0x101 - dest address
 // 0x102       - port 
-// 0x110-0x190 - data || 128 bytes
+// 0x110-0x18F - data || 128 bytes
 class NetCard : public CIDevice {
 public:
 	void Work() {}
@@ -116,17 +116,21 @@ class SystemService {
 typedef ::std::pair<Computer*, uint16_t> ComputerWithIP;
 	::std::vector<ComputerWithIP> computers;
 	::std::function<void(CIDevice*)> func;
-	::std::thread thread;
+	::std::thread* thread;
 	// 0 - close
 	// 1 - work
 	// 2 - pause
-	uint8_t threadState;
+	uint8_t threadState = 1;
 	void WorkThread();
 public:
 	void InitCard(CIDevice*);
+	void Join() {
+		if (thread->joinable()) thread->join();
+		exit(-1);
+	}
 	SystemService();
 	Computer* GetPointerToComputer(uint16_t id);
-	uint16_t CreateNewComputer();
+	uint16_t CreateNewComputer(::std::string);
 	~SystemService();
 };
 #include "Device.cpp"

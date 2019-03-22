@@ -11,10 +11,13 @@ void MemoryService::DUMP() {
 		} ::std::cout << ::std::endl;
 	}
 }
+#define NOTHROW
 template<typename T>
 T MemoryService::Read(uint16_t addr) {
 	if ((sizeof(T) + addr) > size) {
+#ifndef NOTHROW
 		throw WRONG_ADDR;
+#endif
 	}
 	T returnValue = 0;
 	memcpy(&returnValue, memory + addr, sizeof(T));
@@ -23,9 +26,12 @@ T MemoryService::Read(uint16_t addr) {
 template<typename T>
 void MemoryService::Write(uint16_t addr, T value) {
 	if ((sizeof(T) + addr) > size) {
+#ifndef NOTHROW
 		throw WRONG_ADDR;
+#endif
 	}
 	write_mutex.lock();
 	memcpy(memory + addr, &value, sizeof(T));
 	write_mutex.unlock();
 }
+#undef NOTHROW

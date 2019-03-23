@@ -14,6 +14,24 @@ void removeComments(::std::string& string) {
 			string[i] = ' '; i--;
 		} else 
 		if (string[i] == ',') {
+			bool x = 0;
+			// If ',' is contained in the "...", then we do not remove it.
+			for (size_t j = 0, abc = -1; j < size; j++) {
+				if (string[j] == '"') {
+					if (abc == -1) {
+						if (j > i) {
+							break;
+						}
+						else {
+							abc = j;
+						}
+					}
+					else {
+						x = 1; break;
+					}
+				}
+			}
+			if (x) break;
 			string[i] = ' '; i--;
 		} else
 		if (string[i] == '\n'&& i + 1 < size) {
@@ -124,13 +142,44 @@ void compileLine(::std::string const& input, ::std::string& out, uint16_t& offse
 			word += input[i];
 		}
 		else if (word.size() > 0){
-			if (word == ",") {
-				continue;
+			if (word == "db") {
+				word = input; i++;
+				auto value = word.find('"');
+				if (value == word.size()) return;
+				word.erase(word.begin(), word.begin() + value + 1);
+				value = word.find('"');
+				if (value == word.size()) return;
+				word.erase(word.begin() + value, word.begin() + word.size());
+				offset += word.size();
+				out += word;
+				return;
+			}
+			else if (word == "dbh") {
+				word = "";
+				i++;
+				for (;; i++) {
+					if (i < size && input[i] != ' ') {
+						word += input[i];
+					}
+					else if (word.size() > 0) {
+						word += 'h';
+						uint8_t state = isInt(word);
+						if (state == 2) {
+							uint16_t value = getIntFromHex(word);
+							offset += 1;
+							out += int8_t(value % 0x100);
+						}
+						word = "";
+					}
+					else if (i >= size) {
+						return;
+					}
+				}
 			}
 			uint8_t state = isInt(word);
 			if (state == 1) {
 				uint16_t value = stoi(word);
-				offset += value % 0x100 + (value > 0x100);
+				offset += 2;
 				out += int8_t(value % 0x100);
 				out += int8_t(value / 0x100);
 				if (i >= size) break;
@@ -139,7 +188,7 @@ void compileLine(::std::string const& input, ::std::string& out, uint16_t& offse
 			} else 
 			if (state == 2) {
 				uint16_t value = getIntFromHex(word);
-				offset += value % 0x100 + (value > 0x100);
+				offset += 2;
 				out += int8_t(value % 0x100);
 				out += int8_t(value / 0x100);
 				if (i >= size) break;
@@ -149,7 +198,7 @@ void compileLine(::std::string const& input, ::std::string& out, uint16_t& offse
 			auto itr = keywords.begin();
 			for (; itr != keywords.end() && (*itr).string != word; itr++);
 			if (itr == keywords.end()) throw word;
-			offset += 1 + ((*itr).bytecode >= 0x100);
+			offset += 1 + ((*itr).addr == 1);
 			out += int8_t((*itr).bytecode % 0x100);
 			if ((*itr).addr ==  1) {
 				out += int8_t((*itr).bytecode / 0x100);

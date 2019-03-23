@@ -10,8 +10,8 @@ memset(procMemory, 0, 0x30);
 WriteToRegister(procMemory, 0x08, 0x20);
 typeOfDevice = 1;
 	if (functions == nullptr) {
-		functions = new ::std::function<void(MemoryService *RAM, uint8_t *procMemory)>*[0x200];
-		for (size_t i = 0; i < 0x200; i++) {
+		functions = new ::std::function<void(MemoryService *RAM, uint8_t *procMemory)>*[0x100];
+		for (size_t i = 0; i < 0x100; i++) {
 			functions[i] = nullptr;
 		}
 		setReg2Value(procMemory, 0, 0x190);
@@ -147,10 +147,7 @@ Computer::Computer(::std::function<void(CIDevice*)>& initNetCard) : System(3) {
 	initNetCard((CIDevice*)devices[2]);
 }
 void SystemService::WorkThread() {
-	while (1) {
-		if (threadState == 0) {
-			::std::cout << "BLYAT.";
-		}
+	while (threadState!=0) {
 		while (threadState == 2 || computers.size() == 0) {
 			::std::this_thread::sleep_for(::std::chrono::milliseconds(50));
 		}

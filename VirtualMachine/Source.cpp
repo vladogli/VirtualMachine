@@ -1,3 +1,4 @@
+#define COMPILER
 #ifdef COMPILER
 #include <iostream>
 #include <string>
